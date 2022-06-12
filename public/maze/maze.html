@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="maze.js"></script>
+	<script src="maze_data.js"></script>
+	<link rel="stylesheet" href="styles.css">
+	<link rel="icon" href="https://openmoji.org/data/color/svg/E04A.svg">
+	<title>Maze</title>
+</head>
+
+<body>
+
+<div id="mainDiv">
+	<div id="screenPanel">
+		<canvas id="screen"></canvas>
+		<h2 id="xCoord">X:</h2>
+		<h2 id="yCoord">Y:</h2>
+		<button type="button" onclick="test()">Draw</button><br>
+		<a href="shop.jpg" target="_blank" class="purchase">Buy extra colours + hamster pet ($9.99)</a>
+	</div>
+	<div id="buttonPanel">
+		<div class="buttonRow">
+			<button type="button" class="moveBtn" id="forward">Forward</button>
+		</div>
+		<div class="buttonRow">
+			<button type="button" class="moveBtn" id="left">Left</button>
+			<button type="button" class="moveBtn" id="right">Right</button>
+		</div>
+		<div class="buttonRow">
+			<button type="button" class="moveBtn" id="back">Back</button>
+		</div>
+		<p id="whereAmI">
+			You are here
+		</p>
+	</div>
+</div>
+
+
+</body>
+
+</html>

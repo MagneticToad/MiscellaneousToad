@@ -1,0 +1,195 @@
+/* https://material.io/design/color/the-color-system.html#tools-for-picking-colors using 6666EC as the base */
+
+body {
+	font-family: 'Ubuntu', sans-serif;
+}
+
+.home_button {
+	position: absolute;
+	left: 1%;
+	display: flex;
+}
+
+.all_content {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	overflow: hidden;
+}
+
+.welcome_header {
+	background-color: #6666ec;
+	width: 100%;
+	text-align: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1em 0em;
+	gap: 0.5em;
+}
+
+a.box {
+	background-color: #66a9ec;
+	padding: 0.8em;
+	text-decoration: none;
+	color: white;
+	min-width: 15em;
+	text-align: center;
+	position: relative;
+	display: inline-block;
+	background: linear-gradient(to right, #a966ec, #a966ec 50%, #66a9ec 50%);
+	background-clip: text;
+	background-size: 200% 100%;
+	background-position: 100%;
+	transition: background-position 200ms ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.2em;
+}
+
+a.box:hover {
+	background-position: 0 100%;
+}
+
+.spin-wiggle {
+	animation: spin-wiggle 30s;
+	animation-timing-function: cubic-bezier(0.55, 0.06, 0.68, 0.19);
+	animation-iteration-count: infinite;
+
+}
+
+@keyframes spin-wiggle {
+	0% {
+		transform: rotate(0deg);
+	}
+	3% {
+		transform: rotate(-10deg);
+	}
+	4.33% {
+		transform: rotate(360deg);
+	}
+    50% {
+    	transform: rotate(360deg);
+    }
+	53% {
+		transform: rotate(355deg);
+	}
+	53.33% {
+		transform: rotate(365deg);
+	}
+	53.67% {
+		transform: rotate(355deg);
+	}
+	54% {
+		transform: rotate(365deg);
+	}
+	54.33% {
+		transform: rotate(360deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.paused{
+	-webkit-animation-play-state: paused;
+	-moz-animation-play-state: paused;
+	-o-animation-play-state: paused; 
+	animation-play-state: paused;
+}
+
+.active_toad {
+	cursor: pointer;
+}
+
+a.box:hover .project_description {
+	opacity: 1;
+	left: 105%;
+}
+
+.project_description {
+	z-index: 1;
+	min-width: 15em;
+	padding: inherit;
+	position: absolute;
+    opacity: 0;
+    transition: opacity 1000ms, left 500ms cubic-bezier(0.12, 0.92, 0.75, 0.93);
+	left: 50em;
+	border: 2px solid #a966ec;
+	background-color: white;
+	color: black;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.all_content h3, .attributions {
+	text-align: center;
+}
+
+@media screen and (orientation:portrait) {
+	.all_content {
+		font-size: 1.5em;
+	}
+	.all_content .box {
+		font-size: 30px;
+	}
+	.welcome_header img {
+		width: 190px;
+	}
+	.welcome_header .home_button .arrow {
+		width: 75px;
+	}
+	.welcome_header .home_button .home {
+		width: 100px;
+	}
+	.all_content a img {
+		width: 45px;
+	}
+
+	.project_description {
+		top: 30em;
+		left: 0;
+		transition: top 500ms cubic-bezier(0.12, 0.92, 0.75, 0.93);
+	}
+	
+	a.box:hover .project_description {
+		top: 125%;
+		left: 0;
+	}
+
+	.item {
+		display: flex;
+		align-items: center;
+		position: relative;
+	}
+	
+	.item:after {
+		content: "?";
+		position: absolute;
+		left: 105%;
+		color: #6666ec;
+		font-weight: bold;
+		border: 0.2em solid #6666ec;
+		border-radius: 50%;
+		width: 30px;
+		height: 30px;
+		text-align: center;	
+	}
+
+	.item:hover:after {
+		color: #a966ec;
+		border-color: #a966ec;
+	}
+	
+	.item:hover a .project_description {
+		top: 125%;
+		left: 0;
+		opacity: 1;
+	}
+
+	.item:hover a.box {
+		background-position: 0 100%;
+	}
+}

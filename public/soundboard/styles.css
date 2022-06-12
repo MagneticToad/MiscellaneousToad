@@ -1,0 +1,67 @@
+#soundboardButtons {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.soundboardButtonHolder {
+	border: 1px solid black;
+	display: flex;
+	flex-direction: column;
+	text-align: center;
+	padding: 3px;
+	margin: 3px;
+	min-width: 125px;
+	min-height: 125px;
+	justify-content: space-around;
+}
+
+/* if on phone? */
+@media only screen and (orientation : portrait) {
+	#soundboardButtons {
+		align-content: flex-start;
+	}
+	
+	.soundboardButtonHolder {
+		width: 30vw;
+		height: 30vw;
+		max-width: 30vw;
+		max-width: 30vw;
+		overflow: scroll;
+	}
+	
+	h3 {
+		font-size: 3vw;
+	}
+		
+	p {
+		font-size: 2vw;
+	}
+	
+	#availableSounds {
+		display: flex;
+		flex-direction: column;
+	}
+
+	#availableSounds button {
+		margin-bottom: 1vw;
+		height: 3vh;
+		display: inline-block;
+		align-self: flex-start;
+	}
+}
+
+/* if on desktop? */
+@media only screen and (orientation : landscape) {
+	.soundboardButtonHolder:hover {
+		background-color: lightgrey;
+		cursor: pointer;
+	}
+}
+
+.pressed, .pressed:hover {
+	background-color: darkgrey;
+}
+
+p, h3{
+	pointer-events: none;
+}

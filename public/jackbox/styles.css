@@ -1,0 +1,219 @@
+.unownedPack {
+	background-color: lightgrey;
+	opacity: 0.5;
+}
+
+.unownedGame {
+	color: lightgrey;
+	opacity: 0.5;
+}
+
+li:hover {
+	color: green;
+}
+
+.game {
+	display: list-item;
+	list-style-type: disc;
+	list-style-position: inside;
+	margin-left: 1.5em;
+}
+
+.ownedPack .game p {
+	color: darkgrey;
+}
+
+.ownedPack .played p {
+	color: black;
+}
+
+.game:hover .tooltip {
+	display: initial;
+}
+
+.game:hover p {
+	color: purple;
+	font-weight: bold;
+}
+
+.game p {
+	display: inline;
+}
+
+.players::before {
+	content: "(";
+}
+
+.players::after {
+	content: ")";
+}
+
+.tooltip {
+	z-index: 1;
+	position: absolute;
+	display: none;
+	margin-left: 4em;
+	padding: 0.5em;
+	border: 1px solid black;
+	background-color: white;
+}
+
+.tooltip:hover {
+	visibility: visible;
+}
+
+.played::after {
+	content: "✓";
+}
+/*tone*/
+.tone {
+	display: block;
+	font-size: 30px;
+}
+
+.tone::before {
+	content: "😶: ";
+}
+
+.tone .unknown::before {
+	font-weight: bold;
+	content: "?";
+	color: darkgrey;
+}
+
+.tone .silly::before {
+	content: "😐😎";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+
+.tone .silly::after {
+	content: "😛";
+}
+
+.tone .semi-serious::before, .tone.semi-silly::before {
+	content: "😐";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+
+.tone .semi-serious::after, .tone.semi-silly::after {
+	content: "😛";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+
+.tone .serious::before {
+	content: "😐";
+}
+
+.tone .serious::after {
+	content: "😎😛";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+/*consensus*/
+.consensus {
+	display: block;
+	font-size: 30px;
+}
+
+.consensus::before {
+	content: "📊: ";
+}
+
+.consensus .unknown::before {
+	font-weight: bold;
+	content: "?";
+	color: darkgrey;
+}
+
+.consensus .bad::before {
+	content: "💩";
+}
+
+.consensus .bad::after {
+	content: "😏🌟";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+
+.consensus .ok::before {
+	content: "💩";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+
+.consensus .ok::after {
+	content: "🌟";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+
+.consensus .good::before {
+	content: "💩😏";
+	filter: grayscale(100%);
+	opacity: 0.5;
+}
+
+.consensus .good::after {
+	content: "🌟";
+}
+/*complexity*/
+.complexity {
+	font-size: 30px;
+}
+
+.complexity::before {
+	content: "😵‍: ";
+}
+
+.complexity .unknown::before {
+	font-weight: bold;
+	content: "?";
+	color: darkgrey;
+}
+
+.complexity .easy::before {
+	content: "★";
+	color: green;
+}
+
+.complexity .easy::after {
+	content: "★★";
+	color: lightgrey;
+}
+
+.complexity .medium::before {
+	content: "★★";
+	color: orange;
+}
+
+.complexity .medium::after {
+	content: "★";
+	color: lightgrey;
+}
+
+.complexity .hard::before {
+	content: "★★★";
+	color: red;
+}
+
+.complexity .hard::after {
+
+}
+
+.tone::after {
+	content: " (silliness)";
+	font-size: 0.5em;
+}
+
+.consensus::after {
+	content: " (quality)";
+	font-size: 0.5em;
+}
+
+.complexity::after {
+    content: " (complexity)";
+    font-size: 0.5em;
+}

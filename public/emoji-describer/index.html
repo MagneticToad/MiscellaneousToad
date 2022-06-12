@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Emoji Describer</title>
+	<link rel="icon" href="https://openmoji.org/data/color/svg/1F63C.svg">
+	<script src="script.js"></script>
+	<script src="emojis/emojis.js"></script>
+	<script src="jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="../styles.css">
+</head>
+<body onload="initPageManagement()">
+	<div id="pageView">
+		<!-- <div id="navigationPane"> ###PANE REMOVAL --> 
+			<!-- <div id="customHeader"> -->
+				<!-- <p>Navigate through pages here</p> -->
+				<!-- <button type="button" onclick="toggleLocalMode()" id="toggleModeButton">Online mode</button> -->
+			<!-- </div> -->
+		<!-- </div> -->
+		<div class="page" id="landingPage">
+			<p class="connectionStatus bold red">Not connected</p>
+			<p>Username:</p>
+			<input type="text" id="username" oninput="usernameChange(this.value)" maxlength="15" autocomplete="off"></input>
+			<br>
+			<br>
+			<button type="button" id="connectButton" onclick="attemptConnect()" disabled>Connect</button>
+			<p>All emojis designed by <a href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
+		</div>
+		<div class="page" id="homePage">
+			<br>
+			<hr>
+			<p class="connectionStatus bold red">Not connected</p>
+			<button type="button" id="disconnectButton" onclick="attemptDisconnect()" disabled>Disconnect</button>
+			<hr>
+			<h1>Lobby manager</h1>
+			<button type="button" id="createGame" onclick="attemptCreateNewGame()" class="resettable">Create new game</button>
+			<br>
+			<input type="text" id="lobbyCode" oninput="lobbyCodeChange(this.value)" maxlength="5" placeholder="Enter code here" class="resettable"></input>
+			<button type="button" id="joinGame" onclick="attemptJoinGame()" class="resettable" disabled>Join game</button>
+			<hr>
+			<h1>Global chat room</h1>
+			<br>
+			<div id="globalMessages">
+			</div>
+			<br>
+			<input type="text" oninput="globalMessageChange(this.value)" id="globalMessage" disabled></input>
+			<button id="globalSendButton" type="button" onclick="globalSend()" disabled>Send</button>
+		</div>
+		<div class="page" id="lobbyPage">
+			<div id="joinInfoHolder">
+				<h1 id="displayLobbyCode">Code goes here</h1>
+				<p>or with url</p>
+				<input id="directJoinURLHolder" readonly></input>
+				<button type="button" id="copyURLButton" onclick="copyDirectJoinURLToClipboard()" class="resettable">Copy</button>
+			</div>
+			<div id="lobbyPlayerBox" class="boxed">
+				<p class="bold">Players</p>
+				<hr>
+				<div id="lobbyPlayerList">
+				</div>
+			</div>
+			<br>
+			<div id="lobbySettings" class="boxed">
+				<p class="bold">Match Settings</p>
+				<div id="settingsRow1">
+					<div id="ffaSettings">
+						<input type="radio" id="FFA" name="mode" value="FFA" onclick="attemptChangeSetting(this.id)" checked>
+						<label for="FFA">Free-for-All</label><br>
+						<div class="subSettings">
+							<input type="checkbox" id="oneGuesser" name="oneGuesser" onclick="attemptChangeSetting(this.id)" checked>
+							<label for="oneGuesser" title="Only the first person to guess the prompt gets points; after that, the round ends">One Guesser</label><br>
+							<input type="checkbox" id="timer" name="timer" onclick="attemptChangeSetting(this.id)">
+							<label for="timer">Timer</label>
+							<select name="timerTime" id="timerTime" onchange="attemptChangeSetting(this.id)">
+								<option value="30">30</option>
+								<option value="45">45</option>
+								<option value="60">60</option>
+								<option value="75">75</option>
+								<option value="90">90</option>
+								<option value="120" selected>120</option>
+								<option value="150">150</option>
+								<option value="180">180</option>
+								<option value="240">240</option>
+								<option value="300">300</option>
+							</select><br>
+							<input type="checkbox" id="promptOptions" name="promptOptions" onclick="attemptChangeSetting(this.id)">
+							<label for="promptOptions">Prompt Options</label><br>
+						</div>
+					</div>
+					<div id="teamsSettings">
+						<input type="radio" id="teams" name="mode" value="teams" onclick="attemptChangeSetting(this.id)">
+						<label for="teams">Teams</label>
+						<div class="subSettings">
+							<input type="radio" id="fastest" name="teamsBasis" value="fastest" checked>
+							<label for="fastest">Fastest</label>
+							<input type="radio" id="fewestEmojis" name="teamsBasis" value="fewestEmojis" checked>
+							<label for="fewestEmojis">Fewest Emojis</label><br>
+						</div>
+					</div>
+				</div>
+				<div id="settingsRow2">
+					<label for="rounds">Rounds:</label>
+					<select name="rounds" id="rounds" onchange="attemptChangeSetting(this.id)">
+						<option value="1">1</option>
+						<option value="2">2</option>
+						<option value="3">3</option>
+						<option value="4">4</option>
+						<option value="5">5</option>
+						<option value="6">6</option>
+						<option value="7">7</option>
+						<option value="8">8</option>
+						<option value="9">9</option>
+						<option value="10">10</option>
+					</select>
+				</div>
+			</div>
+			<br>
+			<hr>
+			<h1>Lobby chat room</h1>
+			<br>
+			<div id="lobbyMessages" class="resettable">
+			</div>
+			<br>
+			<input type="text" oninput="lobbyMessageChange(this.value)" id="lobbyMessage"></input>
+			<button id="lobbySendButton" type="button" onclick="lobbySend()" disabled>Send</button>
+			<br>
+			<br>
+			<button type="button" id="startGame" onclick="attemptStartGame()" class="resettable" disabled>Start</button>
+			<button type="button" id="leaveGame" onclick="attemptLeaveGame()" class="resettable">Leave</button>
+		</div>
+		<div class="page" id="gamePage">
+			<div id="gameDiv">
+				<div class="boxed gameColumn" id="playersColumn">
+					<div class="columnHeader">
+						<p class="bold">Players</p>
+					</div>
+					<div id="gamePlayerList">
+					<p>SamplePlayer1 ✎</p>
+					<p>SamplePlayer2</p>
+					</div>
+				</div>
+				<div class="boxed gameColumn centered" id="emojisColumn">
+					<div class="columnHeader">
+						<p class="bold" id="topicHolder">SampleTopic</p>
+					</div>
+					<div id="cluePanel">
+						<!--Prompt selection is shown inside the cluePanel but is not visible most of the time -->
+						<div id="promptSelectionPanel" class="boxed resettable">
+							<h3 id="promptSelectionStatus">Choose a prompt:</h3>
+							<div id="promptOptionsHolder">
+								<div id="promptOption1" class="promptOption boxed" onclick="attemptSelectPrompt(1)">
+									<span class="promptOptionCategory bold">Video Game</span>
+									<span class="promptOption">Minecraft</span>
+								</div>
+								<div id="promptOption2" class="promptOption boxed" onclick="attemptSelectPrompt(2)">
+									<span class="promptOptionCategory bold">Movie</span>
+									<span class="promptOption">The Hunger Games</span>
+								</div>
+								<div id="promptOption3" class="promptOption boxed" onclick="attemptSelectPrompt(3)">
+									<span class="promptOptionCategory bold">Person</span>
+									<span class="promptOption">Lil Pump</span>
+								</div>
+							</div>
+							<br>
+						</div>
+						<div id="emojiClues" class="resettable">
+						</div>
+						<div id="clueInput" class="resettable">
+							<div id="cluePreview">
+								<br>
+								<div id="emojiClueHolder" class="horizontalBoxed bold" data-placeholder="Click on emojis to add them to the clue here.&#xa;Click send when the clue is ready."></div>
+								<div id="cluePreviewButtons">
+									<button type="button" id="clueUndoButton" onclick="undoClue()">Undo</button>
+									<button type="button" id="clueClearButton" onclick="clearClue()">Clear</button>
+									<button type="button" id="clueSendButton" onclick="attemptSendClue()" class="resettable">Send</button>
+								</div>
+							</div>
+							<div id="emojiPanel" class="verticalBoxed" onclick="addEmoji(event)">
+							</div>
+							<input type="text" id="emojiSearchBox" oninput="emojiSearchChange(this.value)" placeholder="Search for emojis here"></input>
+							<button type="button" id="emojiSearchButton" onclick="emojiSearch(true)" disabled>Search</button>
+							<input type="checkbox" id="fastSearch" onclick="toggleFastSearch()">
+						</div>
+					</div>
+				</div>
+				<div class="boxed gameColumn" id="gameChatColumn">
+					<div class="columnHeader">
+						<p class="bold">Chat & Guess</p>
+					</div>
+					<div id="guessPanel">
+						<div id="guessesPanel" class="resettable">
+						</div>
+						<div id="guessInputPanel">
+							<br>
+							<input type="text" id="guessInput" oninput="guessChange(this.value)" class="resettable"></input>
+							<button type="button" id="sendGuessButton" onclick="attemptSendGuess()">Guess</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="page" id="directJoinPage">
+			<p id="directJoinCodeHolder" class="bold">Join lobby XXXX</p>
+			<p>Username:</p>
+			<input type="text" id="directJoinUsername" oninput="directJoinUsernameChange(this.value)" maxlength="15" autocomplete="off"></input>
+			<br>
+			<br>
+			<button type="button" id="directJoinConnectButton" onclick="attemptConnect()" disabled>Join</button>
+			<p>All emojis designed by <a href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
+		</div>
+		<div class="page" id="testPage">
+			<p>This is a test page</p>
+			<p>You should only be able to see this when on this simulated page</p>
+		</div>
+	</div>
+</body>
+
+</html>

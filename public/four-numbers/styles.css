@@ -1,0 +1,56 @@
+body {
+	font-family: 'Ubuntu', sans-serif;
+}
+
+.solve_button {
+	padding: 0.1em 1em;
+	font-size: 1em;
+	color: white;
+	background: #66a9ec;
+	border: 1px solid #a966ec;
+	font-family: 'Ubuntu', sans-serif;
+}
+
+.all_content {
+	display: flex;
+	flex-direction: column;
+	
+	align-items: start;
+}
+.solve_button:active {
+	background: #a966ec;
+}
+
+h1 {
+	margin-bottom: 0em;
+}
+
+#numbersinput {
+	margin-bottom: 1em;
+}
+
+@media screen and (orientation:portrait) {
+	body {
+		font-size: 3em;
+	}
+	
+	.solve_button {
+		font-size: 1.5em;
+	}
+	
+	#numbersinput {
+		width: 50vh;
+		height: 5vh;
+		font-size: 32px;
+		font-family: 'Ubuntu', sans-serif;
+		text-align: center;
+	}
+	
+	.all_content {
+		align-items: center;
+	}
+	
+	.all_content p {
+		text-align: center;
+	}
+}

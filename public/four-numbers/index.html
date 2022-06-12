@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="script1.3.js"></script>
+	<link rel="icon" href="https://openmoji.org/data/color/svg/1F522.svg">
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="all_content">
+	<h1>4 Numbers Solver</h1>
+	<p>Enter 4 Numbers:</p>
+	<input id="numbersinput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" oninput="inputChange()">
+	<button type="button" onclick="buttonPress()" class="solve_button">Solve</button>
+
+	<p id="solutions"></p>
+</div>
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="/__/firebase/8.6.8/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="/__/firebase/8.6.8/firebase-analytics.js"></script>
+
+<!-- Initialize Firebase -->
+<script src="/__/firebase/init.js"></script>
+
+</body>
+
+</html>

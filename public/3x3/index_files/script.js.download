@@ -1,0 +1,32 @@
+function addVisualisation(order, rotations) {
+	//order is array of int
+	//turn rotations into array of int
+	var div = document.getElementById("main");
+	div.innerHTML += `<hr>`;
+	
+	if (true) {
+		div.innerHTML += `<p>cards: ${order}<p>`;
+		div.innerHTML += `<p>rotations: ${rotations}<p>`;
+	}
+		
+	div.innerHTML +=
+	`<table>
+		<tr>
+			<td><img src="card${order[0]}.png" height="250" width="250" style="transform:rotate(${rotations[0]*90}deg);"></img></td>
+			<td><img src="card${order[1]}.png" height="250" width="250" style="transform:rotate(${rotations[1]*90}deg);"></img></td>
+			<td><img src="card${order[2]}.png" height="250" width="250" style="transform:rotate(${rotations[2]*90}deg);"></img></td>
+		</tr>
+		<tr>
+			<td><img src="card${order[3]}.png" height="250" width="250" style="transform:rotate(${rotations[3]*90}deg);"></img></td>
+			<td><img src="card${order[4]}.png" height="250" width="250" style="transform:rotate(${rotations[4]*90}deg);"></img></td>
+			<td><img src="card${order[5]}.png" height="250" width="250" style="transform:rotate(${rotations[5]*90}deg);"></img></td>
+		</tr>
+		<tr>
+			<td><img src="card${order[6]}.png" height="250" width="250" style="transform:rotate(${rotations[6]*90}deg);"></img></td>
+			<td><img src="card${order[7]}.png" height="250" width="250" style="transform:rotate(${rotations[7]*90}deg);"></img></td>
+			<td><img src="card${order[8]}.png" height="250" width="250" style="transform:rotate(${rotations[8]*90}deg);"></img></td>
+		</tr>
+	</table>`;
+
+	div.innerHTML += `<hr>`
+}

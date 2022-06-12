@@ -1,0 +1,24 @@
+li:hover {
+	color: purple;
+	font-weight: bold;
+}
+
+li:hover .tooltip {
+	display: initial;
+	color: black;
+	font-weight: normal;
+}
+
+.tooltip {
+	z-index: 1;
+	position: absolute;
+	display: none;
+	margin-left: 1em;
+	padding: 0.5em;
+	border: 1px solid black;
+	background-color: white;
+}
+
+.tooltip:hover {
+	visibility: visible;
+}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Soundboard</title>
+	<link rel="icon" href="https://openmoji.org/data/color/svg/1F39B.svg">
+	<script src="script.js"></script>
+	<script src="jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="../styles.css">
+</head>
+<body onload="initPageManagement()">
+	<audio></audio>
+	<input type="text" id="soundToAdd"></input>
+	<button type="button" onclick="addSound()">Add</button>
+	<button type="button" onclick="removeLastSound()">Remove</button>
+	<button type="button" onclick="clearSounds()">Clear</button>
+	<input type="checkbox" id="fastAdd"></input>
+	<div id="soundboardButtons">
+	</div>
+	<div id="availableSounds">
+		<h3>Available Sounds:</h3>
+	</div>
+</body>
+
+</html>

@@ -4088,7 +4088,10 @@ var emojis = {
     "1F995": {
         "name": "sauropod",
         "tags": [
-            "sauropod"
+            "sauropod",
+			"dinosaur",
+			"trex",
+			"tyrannosaurus rex"
         ]
     },
     "1F996": {

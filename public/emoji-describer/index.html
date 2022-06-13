@@ -4,19 +4,19 @@
 	<title>Emoji Describer</title>
 	<link rel="icon" href="https://openmoji.org/data/color/svg/1F63C.svg">
 	<script src="script.js"></script>
+	<script src="config.js"></script>
 	<script src="emojis/emojis.js"></script>
 	<script src="jquery-3.6.0.min.js"></script>
 	<link rel="stylesheet" href="styles.css">
-	<link rel="stylesheet" href="../styles.css">
 </head>
 <body onload="initPageManagement()">
 	<div id="pageView">
-		<!-- <div id="navigationPane"> ###PANE REMOVAL --> 
-			<!-- <div id="customHeader"> -->
-				<!-- <p>Navigate through pages here</p> -->
-				<!-- <button type="button" onclick="toggleLocalMode()" id="toggleModeButton">Online mode</button> -->
-			<!-- </div> -->
-		<!-- </div> -->
+		<div id="navigationPane">
+			<div id="customHeader">
+				<p>Navigate through pages here</p>
+				<button type="button" onclick="toggleLocalMode()" id="toggleModeButton">Local mode</button>
+			</div>
+		</div>
 		<div class="page" id="landingPage">
 			<p class="connectionStatus bold red">Not connected</p>
 			<p>Username:</p>

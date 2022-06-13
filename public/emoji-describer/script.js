@@ -8,17 +8,21 @@ General todo:
 
 Maybe long-term things to do:
 -Each onMessage type is its own function; api decides where to send
--Send lobbycode with request so server doesn't call connections every time, but check whether player is actually in lobby once lobby data is retrieved
+-Send lobbyCode with request so server doesn't call connections every time, but check whether player is actually in lobby once lobby data is retrieved
 -Better refreshing of players; keep some global variables of current players
+-[?] foreach is bad? Use for?
 */
 
-
-var socketURL = "wss://uuql9ukc55.execute-api.ap-southeast-2.amazonaws.com/Test";
+/*
+###Cleaning to do
+- Address suggestions
+- Look at https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties for TMIs
+- Config file for both back and front end
+- Remove megaobject parameters (particularly in back end)
+*/
+var localMode;
 var webSocket;
-
 var lastRound = 0; //keep the last known round number; only display round number when it changes
-
-var nameOfGame = "Emoji Describer";
 
 //an object temporarily used by the direct join via url function
 var directJoining = {
@@ -31,32 +35,31 @@ var directJoining = {
 //This object saves the initial state of each of these elements so they can later be reset by the resetElement function
 var savedStates = {};
 
-const landingPage = "landingPage"; //default page
-
 //decides whether to use files locally or get them from openmoji
-var localMode = true; //###toggle default here
 function toggleLocalMode() {
 	localMode = !localMode;
-	// $("#toggleModeButton")[0].innerHTML = localMode ? "Local mode" : "Online mode"; ###PANE REMOVAL
+	$("#toggleModeButton")[0].innerHTML = localMode ? "Local mode" : "Online mode";
 }
 
-
 function initPageManagement() {
-	console.log("loaded");
-	toggleLocalMode(); //include or not to change default
+	console.log("Page loaded");
+	localMode = config.devMode;
 	$(".page").hide();
-	$(`#${landingPage}`).show();
-	for (var x = 0; x < 10; x++) {
-	}
-	for (var page of $(".page")) {
-		console.log(`Creating button for page ${page.id}`);
-		let navigationButton = document.createElement("button");
-		navigationButton.value = page.id;
-		navigationButton.onclick = function(e) {
-			navigateTo(e.target.value);
+	$(`#${config.landingPage}`).show();
+	
+	if (config.devMode) {
+		for (var page of $(".page")) {
+			console.log(`Creating button for page ${page.id}`);
+			let navigationButton = document.createElement("button");
+			navigationButton.value = page.id;
+			navigationButton.onclick = function(e) {
+				navigateTo(e.target.value);
+			}
+			navigationButton.innerHTML = page.id;
+			$("#navigationPane")[0].appendChild(navigationButton);
 		}
-		navigationButton.innerHTML = page.id;
-		// $("#navigationPane")[0].appendChild(navigationButton); ###PANE REMOVAL
+	} else {
+		$("#navigationPane").hide();
 	}
 	
 	//move these??
@@ -115,8 +118,8 @@ function initPageManagement() {
 		savedStates[`#${currentElement[0].id}`] = currentElement.clone(true, true); //store a clone with its id as a key
 	});
 	
-	if (URLContainsDirectJoin(window.location.href)) { //%22 = "
-		let code = window.location.href.slice(-8).substr(0, 5); //gets the code
+	if (URLContainsDirectJoin(window.location.href)) {
+		let code = window.location.href.slice(-5).substr(0, 5); //gets the code
 		directJoining.joining = true;
 		directJoining.code = code;
 		$("#directJoinCodeHolder")[0].innerHTML = `Join lobby ${code}`;
@@ -125,7 +128,7 @@ function initPageManagement() {
 }
 
 function navigateTo(pageName) {
-	console.log("navigating to " + pageName);
+	console.log(`Navigating to ${pageName}`);
 	$(".page").hide();
 	$(`#${pageName}`).show();
 }
@@ -171,12 +174,10 @@ function lobbyMessageChange(message) {
 }
 
 function attemptConnect() {
-	console.log("attempting to connect");
 	if (webSocket == undefined || webSocket.readyState == 3) {
 		var username = directJoining.joining ? $("#directJoinUsername")[0].value : $("#username")[0].value; //if directly joining, get the value from the direct join page; otherwise, the main login page
-		console.log(username);
 		if (username.length > 0) {
-			webSocket = new WebSocket(`${socketURL}?username=${username}`);
+			webSocket = new WebSocket(`${config.socketURL}?username=${username}`);
 			showConnecting();
 			webSocket.onopen = function (event) {
 				connect();
@@ -230,7 +231,7 @@ function showConnecting() {
 
 function disconnect() {
 	showDisconnect();
-	navigateTo("landingPage");
+	navigateTo("config.landingPage");
 }
 
 function showDisconnect() {
@@ -250,21 +251,19 @@ function showDisconnect() {
 }
 
 function attemptDisconnect() {
-	if (webSocket != undefined && webSocket.readyState == 1) {	
+	if (webSocket?.readyState == 1) {	
 		webSocket.close();
 	}
 }
 
 function globalSend() {
-	if (webSocket != undefined && webSocket.readyState == 1) {	
+	if (webSocket?.readyState == 1) {	
 		messageBox = $("#globalMessage")[0];
 		var text = messageBox.value;
-		var message = {
-			action: "onMessage",
+		send({
 			type: "globalChatMessage",
 			message: text
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 		messageBox.value = "";
 		messageBox.oninput("");
 	}
@@ -274,12 +273,10 @@ function lobbySend() {
 	if (webSocket != undefined && webSocket.readyState == 1) {	
 		messageBox = $("#lobbyMessage")[0];
 		var text = messageBox.value;
-		var message = {
-			action: "onMessage",
+		send({
 			type: "lobbyChatMessage",
 			message: text
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 		messageBox.value = "";
 		messageBox.oninput("");
 	}
@@ -299,23 +296,23 @@ function processMessage(data) {
 			break;
 		}
 		case "moveToLobby": {
-			moveToLobby(message.lobbydata, message.you);
+			moveToLobby(message.lobbyCode, message.settings, message.otherPlayers, message.you);
 			break;
 		}
 		case "playerJoinedLobby": { //when the game is in the lobby
-			refreshPlayers(message.newPlayerList, message.you);
+			refreshPlayers(message.otherPlayers, message.you);
 			break;
 		}
 		case "playerJoinedGame": { //when the game is in progress
-			refreshPlayersColumn(message.playerList, message.describer, message.you);
+			refreshPlayersColumn(message.otherPlayers, message.describer, message.you, message.youAreDescriber);
 			break;
 		}
 		case "playerLeftLobby": { //when the game is in the lobby
-			refreshPlayers(message.newPlayerList, message.you);
+			refreshPlayers(message.newOtherPlayers, message.you);
 			break;
 		}
 		case "playerLeftGame": {
-			refreshPlayersColumn(message.playerList, message.describer, message.you);
+			refreshPlayersColumn(message.otherPlayers, message.describer, message.you, message.youAreDescriber);
 			break;
 		}
 		case "leaveLobby": {
@@ -335,7 +332,7 @@ function processMessage(data) {
 			break;
 		}
 		case "beginGame": {
-			beginGame(message);
+			beginGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.you, message.lobbyCode, message.maxRounds);
 			break;
 		}
 		case "incomingClue": {
@@ -351,11 +348,11 @@ function processMessage(data) {
 			break;
 		}
 		case "continueGame": {
-			continueGame(message);
+			continueGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.you, message.maxRounds);
 			break;
 		}
 		case "gameEnded": {
-			endGame(message.lobbydata, message.you);
+			endGame(message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.you, message.lobbyCode, message.maxRounds, message.settings);
 			break;
 		}
 		case "promptSelected": {
@@ -365,8 +362,17 @@ function processMessage(data) {
 	}
 }
 
+function send(messageObj) {
+	//sends a messageObj
+	//adds the 'action: "onMessage"' attrbiute since all messages have that
+	if (webSocket?.readyState == 1) {
+		messageObj.action = "onMessage";
+		webSocket.send(JSON.stringify(messageObj));
+	}
+}
+
 function URLContainsDirectJoin(string) {
-	return /\?directJoin=%22[A-Z]{5}%22$/.test(string); //%22 = "
+	return /\?directJoin=[A-Z]{5}$/.test(string);
 }
 
 function showGlobalMessage(sender, isSender, message) {
@@ -414,90 +420,91 @@ function scrollElement(element) {
 }
 
 function attemptCreateNewGame() {
-	if (webSocket != undefined && webSocket.readyState == 1) {
-		
-		addButtonFeedback("#createGame", "orange", "Creating...", true);
-		
-		var message = {
-			action: "onMessage",
+	if (webSocket?.readyState == 1) {
+		addButtonFeedback("#createGame", "orange", "Creating...", true);	
+		send({
 			type: "createLobby"
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 	}
 }
 
 function attemptJoinGame(code) {
 	//this function can take a code
 	//if the code is undefined, it uses the #lobbyCode value
-	if (webSocket != undefined && webSocket.readyState == 1) {
+	if (webSocket?.readyState == 1) {
 		addButtonFeedback("#joinGame", "orange", "Joining...", true);
-		
-		var message = {
-			action: "onMessage",
+		send({
 			type: "joinLobby",
-			lobbycode: code == undefined ? $("#lobbyCode")[0].value : code //use a given code or the value of #lobbyCode if no code was given
-		};
-		webSocket.send(JSON.stringify(message));
+			lobbyCode: code ? code : $("#lobbyCode")[0].value //use a given code or the value of #lobbyCode if no code was given
+		});
 	}
 }
 
 function attemptStartGame() {
-	if (webSocket != undefined && webSocket.readyState == 1) {
+	if (webSocket?.readyState == 1) {
 		addButtonFeedback("#startGame", "orange", "Starting...", true);
 	
-		var message = {
-			action: "onMessage",
+		send({
 			type: "startGame"
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 	}
 }
 
 function attemptLeaveGame() {
-	if (webSocket != undefined && webSocket.readyState == 1) {
+	if (webSocket?.readyState == 1) {
 		
 		resetElement("#createGame");
 		resetElement("#joinGame");
 		
 		addButtonFeedback("#leaveGame", "orange", "Leaving...", true);
 	
-		var message = {
-			action: "onMessage",
+		send({
 			type: "leaveLobby"
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 	}
 }
 
-function moveToLobby(lobbyData, you) {
-	document.title = `${nameOfGame} - ${lobbyData.lobbycode}`;
-	$("#directJoinURLHolder")[0].value = `${window.location.href}${URLContainsDirectJoin(window.location.href) ? '' : `?directJoin="${lobbyData.lobbycode}"`}`;
+function moveToLobby(lobbyCode, settings, otherPlayers, you) {
+	/*
+	otherPlayers - array of string usernames of other players
+	you - string of your username
+	*/
+	document.title = `${config.nameOfGame} - ${lobbyCode}`;
+	$("#directJoinURLHolder")[0].value = `${window.location.href}${URLContainsDirectJoin(window.location.href) ? '' : `?directJoin=${lobbyCode}`}`;
 	$("#guessInput")[0].oninput("");
 	resetElement("#startGame");
 	resetElement("#leaveGame");
-	populateLobby(lobbyData, you);
+	populateLobby(lobbyCode, settings, otherPlayers, you);
 	navigateTo("lobbyPage");
 }
 
-function populateLobby(lobbyData, you) {
-	$("#displayLobbyCode")[0].innerHTML = `Join with code: ${lobbyData.lobbycode}`;
+function populateLobby(lobbyCode, settings, otherPlayers, you) {
+	$("#displayLobbyCode")[0].innerHTML = `Join with code: ${lobbyCode}`;
 	
 	resetElement("#leaveGame");
 	
-	refreshPlayers(lobbyData.players, you);
-	refreshSettings(lobbyData.settings);
+	refreshPlayers(otherPlayers, you);
+	refreshSettings(settings);
 }
 
-function refreshPlayers(players, you) {
+function refreshPlayers(otherPlayers, you) {
 	$("#lobbyPlayerList")[0].innerHTML = "";
-	Object.keys(players).forEach((connectionId) => {
+
+	//add the player themselves (they will be on top)
+	let para = document.createElement("P");
+	let t = document.createTextNode(`${you} (You)`);
+	para.appendChild(t);
+	$("#lobbyPlayerList")[0].appendChild(para);
+
+	//then add the others
+	for (let player of otherPlayers) {
 		let para = document.createElement("P");
-		let t = document.createTextNode(connectionId == you.connectionid ? `${players[connectionId].username} (You)` : players[connectionId].username);
+		let t = document.createTextNode(player);
 		para.appendChild(t);
 		$("#lobbyPlayerList")[0].appendChild(para);
-	});
+	};
 	
-	$("#startGame")[0].disabled = !(Object.keys(players).length > 1);
+	$("#startGame")[0].disabled = !(Object.keys(otherPlayers).length > 0);
 }
 
 function leaveLobby() {
@@ -523,7 +530,6 @@ function attemptChangeSetting(settingId) {
 	if (webSocket != undefined && webSocket.readyState == 1) {
 	
 		var message = {
-			action: "onMessage",
 			type: "changeSetting",
 		};
 		
@@ -547,7 +553,7 @@ function attemptChangeSetting(settingId) {
 				break;
 		}
 		
-		webSocket.send(JSON.stringify(message));
+		send(message);
 	}
 }
 
@@ -566,7 +572,7 @@ function refreshSettings(newSettings) {
 				break;
 			case "timer":
 				$("#timerTime").prop('disabled', !newSettings[setting]); //disabled timer select if timer is off and vice versa
-				//no break; wan't to fall through to promptOptions
+				//no break; want to fall through to promptOptions
 			case "oneGuesser":
 			case "promptOptions":
 				$(`#${setting}`)[0].checked = newSettings[setting];
@@ -656,12 +662,10 @@ function attemptSendClue() {
 		
 		addButtonFeedback("#clueSendButton", "orange", "Sending...", true);
 		
-		var message = {
-			action: "onMessage",
+		send({
 			type: "sendClue",
 			clue: emojiCodes
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 	}
 	clearClue();
 }
@@ -669,7 +673,6 @@ function attemptSendClue() {
 function showEmojiClue(emojiCodes) {
 	var box = $("#emojiClues")[0];
 	var shouldScroll = !(hasVerticalScrollBar(box) && (getScrollPercentage(box) < 95)); //only if there is a scroll bar and you are at least partially scrolled up should it not scroll down
-	//###95 here not 100 because clues get slightly scrolled when entering a new clue for the describer
 	
 	var row = document.createElement("div");
 	for (var code of emojiCodes) {
@@ -687,45 +690,71 @@ function toggleFastSearch() {
 	$("#emojiSearchButton")[0].disabled = true;
 }
 
-function beginGame(gameData) {
+function beginGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, lobbyCode, maxRounds) {
 	lastRound = 0;
 	resetElement("#guessesPanel");
-	showGameData(gameData);
-	document.title = `${nameOfGame} - ${gameData.lobbycode}`;
+	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds);
+	document.title = `${config.nameOfGame} - ${lobbyCode}`;
 	navigateTo("gamePage");
 }
 
-function continueGame(gameData) {
+function continueGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds) {
 	resetElement("#guessInput");
 	$("#guessInput")[0].oninput("");
-	showGameData(gameData);
+	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds);
 }
 
-function endGame(lobbydata, you) {
-	refreshClueColumn(false, true, lobbydata.round, undefined, undefined, undefined, lobbydata.settings.rounds); //just want an empty column here
-	refreshPlayersColumn(lobbydata.players, lobbydata.players[lobbydata.describer], you);
+function endGame(youAreDescriber, otherPlayers, round, describer, you, lobbyCode, maxRounds, settings) {
+	refreshClueColumn(false, true, round, undefined, undefined, undefined, maxRounds); //just want an empty column here
+	refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber);
 	showGameMessage("Game has ended");
-	showWinners(lobbydata.players);
+	showWinners(otherPlayers, describer, you, youAreDescriber);
 	showGameMessage("Returning to lobby in 10 seconds");
-	setTimeout(() => moveToLobby(lobbydata, you), 10000);
+	/*
+	A little complex here
+	moveToLobby wants an array of usernames of otherPlayers and you, but we have an array of objects
+	Similarly, it wants you to be your username, not an object with your username and score
+	Additionally, we have describer here as a separate entity, so we need to merge it with otherPlayers if it is another player (i.e. not you)
+	*/
+	if (!youAreDescriber) { //if the describer is a different player
+		otherPlayers.push(describer); //add it to the list of other players
+	}
+	setTimeout(() => moveToLobby(lobbyCode, settings, otherPlayers.map(x => x.username), you.username), 10000);
 }
 
-function showWinners(playerList) {
-	console.log("showing winners");
-	var maxScore = 0;
-	Object.keys(playerList).forEach((connectionId) => {
-		if (playerList[connectionId].score > maxScore) {
-			maxScore = playerList[connectionId].score;
+function showWinners(otherPlayers, describer, you, youAreDescriber) {
+	//allplayers is comprised of you, the describer, and all other players
+	//note that the describer may be you however, so be careful not to double up
+	
+	//what is the highest score?
+	let maxScore = 0;
+	if (you.score > maxScore) {
+		maxScore = you.score;
+	}
+	if (!youAreDescriber && describer.score > maxScore) {
+		maxScore = you.score;
+	}
+	for (let otherPlayer of otherPlayers) {
+		if (otherPlayer.score > maxScore) {
+			maxScore = otherPlayer.score;
 		}
-	});
-	console.log(`max score is ${maxScore}`);
-	var winners = [];
-	Object.keys(playerList).forEach((connectionId) => {
-		if (playerList[connectionId].score == maxScore) {
-			winners.push(playerList[connectionId].username);
+	}
+	
+	//who had the highest score?
+	let winners = [];
+	if (you.score == maxScore) {
+		winners.push(you.username);
+	}
+	if (!youAreDescriber && describer.score == maxScore) {
+		winners.push(describer.username);
+	}
+	for (let otherPlayer of otherPlayers) {
+		if (otherPlayer.score == maxScore) {
+			winners.push(otherPlayer.username);
 		}
-	});
-	console.log(`winners are ${winners}`);
+	}
+
+	//display the winners
 	if (winners.length == 1) {
 		showGameMessage(`The winner is ${winners[0]}`);
 	} else {
@@ -739,32 +768,37 @@ function showWinners(playerList) {
 	}
 }
 
-function showGameData(gameData) {
-	refreshPlayersColumn(gameData.playerList, gameData.describer, gameData.you);
-	refreshClueColumn(gameData.youAreDescriber, gameData.waitingForSelection, gameData.round, gameData.prompt, gameData.category, gameData.promptOptions, gameData.maxRounds);
-	showGameProgress(gameData.round, gameData.waitingForSelection, gameData.describer.username, gameData.category);
+function showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds) {
+	refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber);
+	refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptOptions, maxRounds);
+	showGameProgress(round, waitingForSelection, describer.username, category);
 }
 
-function refreshPlayersColumn(playerList, describer, you) {
+function refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber) {
 	var box = $("#gamePlayerList")[0];
 	box.innerHTML = "";
-	Object.keys(playerList).forEach((connectionId) => {
-		let para = document.createElement("P");
-		
-		//build the string for the player - name, is you, is describer
-		let score = playerList[connectionId].score;
-		let playerString = `[${score}] `;
-		playerString += playerList[connectionId].username;
-		if (connectionId == you.connectionid) {
-			playerString += " (You)";
-		}
-		if ((describer != undefined) && (connectionId == describer.connectionid)) {
-			playerString += " ✎";
-		}
-		let t = document.createTextNode(playerString);
+
+	//add you
+	let para = document.createElement("P");
+	let t = document.createTextNode(`[${you.score}] ${you.username} (You)${youAreDescriber ? " ✎" : ""}`);
+	para.appendChild(t);
+	box.appendChild(para);
+
+	//add describer separately, unless it is you (in which case you will already have the pencil from above)
+	if (!youAreDescriber) {
+		para = document.createElement("P");
+		t = document.createTextNode(`[${describer.score}] ${describer.username} ✎`);
 		para.appendChild(t);
 		box.appendChild(para);
-	});
+	}
+
+	//add others
+	for (let otherPlayer of otherPlayers) {
+		let para = document.createElement("P");
+		let t = document.createTextNode(`[${otherPlayer.score}] ${otherPlayer.username}`);
+		para.appendChild(t);
+		box.appendChild(para);
+	}
 }
 
 function refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptOptions, maxRounds) {
@@ -846,12 +880,10 @@ function populatePromptSelectionPanel(promptOptions) {
 
 function attemptSelectPrompt(selection) {
 	if (webSocket != undefined && webSocket.readyState == 1) {	
-		var message = {
-			action: "onMessage",
+		send({
 			type: "selectPrompt",
 			promptNumber: selection
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 		
 		var indicator = $("#promptSelectionStatus")[0]
 		indicator.innerHTML = "Choosing...";
@@ -873,12 +905,10 @@ function attemptSendGuess() {
 	if (webSocket != undefined && webSocket.readyState == 1) {	
 		guessInput = $("#guessInput")[0];
 		var text = guessInput.value
-		var message = {
-			action: "onMessage",
+		send({
 			type: "sendGuess",
 			guess: text
-		};
-		webSocket.send(JSON.stringify(message));
+		});
 		guessInput.value = "";
 		guessInput.oninput("");
 	}

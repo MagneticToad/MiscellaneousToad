@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>State Survey Mark PokéPlanner</title>
+	<link rel="icon" href="https://openmoji.org/data/color/svg/2120.svg">
+	<script src="script.js"></script>
+    <script src="S2.js"></script>
+    <script src="jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body onload="load()">
+    <h1>Survey Marks</h1>
+    <p>Click '+' to add survey marks</p>
+    <table id="surveyMarksTable">
+        <tr>
+            <th>Type</th>
+            <th>Number</th>
+            <th></th>
+        </tr>
+    </table>
+    <button id="addSurveyMark">+</button>
+    <br>
+    <br>
+    <hr>
+    <p>Or, upload a file containing nearby survey marks such as:</p>
+    <pre>SS99391
+PM66557</pre>
+    <br>
+    <input id="surveyMarksFile" type=file accept="text/csv" name="files[]" size=30>
+    <h1>Existing Stops</h1>
+    <p>Click '+' to add existing stops</p>
+    <table id="existingStopsTable">
+        <tr>
+            <th>Name</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Gym?</th>
+            <th></th>
+        </tr>
+    </table>
+    <button id="addExistingStop">+</button>
+    <br>
+    <br>
+    <hr>
+    <p>Or, upload a file containing nearby existing stops such as: (true = gym, false = stop)</p>
+    <pre>Buruwang Park Welcome Sign,-33.838546,151.055335,false
+Pierre de Coubertin Park,-33.836977,151.058738,true</pre>
+    <input id="existingStopsFile" type=file accept="text/csv" name="files[]" size=30>
+    <h1>Results</h1>
+    <button id="plan" onclick="plan()">Calculate cells</button>
+    <div id="output"></div>
+    <div id="key">
+        <br>
+        <br>
+        <h3>Key</h3>
+        <div class="stop potential">Potential NSW Survey Mark</div>
+        <div class="stop existing">Existing Pokéstop</div>
+        <div class="stop existing gym">Existing Gym</div>
+    </div>
+    <br>
+    <h1>What is this?</h1>
+    <p>This is a tool for helping to plan Pokéstop submissions for NSW State Survey Marks. Enter in Survey Marks that are in the area that you want more stops in. Then, optionally, add in the coordinates of stops that are already there. This tool will calculate which S2 cells each item is found in. This has two primary uses. Firstly, it shows you which Survey Marks are in currently unoccupied L17 cells, making them suitable stops. Secondly, it shows you how far away each L14 cell is from receiving another gym, which can help you prioritise which Survey Marks to try and get approved.</p>
+    <p>Find nearby NSW Survey Marks <a href="https://maps.six.nsw.gov.au/">here</a> (enable 'Survey Marks' in the Map Contents menu at the top right) or with the <a href="https://six.nsw.gov.au/content/mobile">NSW Survey Mark app</a>.</p>
+    <p>You can find out the coordinates of nearby Pokéstops and Gyms in game by selecting them, selecting the arrow in the top right and tapping 'View in Map'. This will take you to the relevant map app where you will see the coordinates of the stop/gym.</p>
+    <h4>Don't know what any of that meant?</h4>
+    <p>Pokémon Go is an augmented reality mobile game where players move around in the real world to catch Pokémon. A key element of the game is interacting with <em>Pokéstops</em> and <em>Gyms</em>. These are specific points that represent <em>something</em> in the real world, e.g. a statue, a playground, a church etc. It is generally in the player's interests for there to be more Pokéstops and Gyms around. Players, once reaching a high enough level, can nominate places to become Pokéstops. Pokéstops cannot just be anything, like a tree or a stop sign. They have to have some significance. One thing that <em>can</em> be a Pokéstop is a <em>NSW State Survey (or Permanent) Mark</em>. These are small-medium sized pieces of metal found all throughout NSW, generally embedded in or near kerbs, that serve a variety of geographic purposes. While they are not always approved if nominated, they are usually eventually accepted if they are nominated enough times. Because they are so abundant, they are useful to serious Pokémon Go players as they are an easy way to get more Pokéstops in an area. However, there are some complexities when adding stops.</p>
+    <p>Pokémon Go uses <em>S2 Cells</em> for many things. S2 Cells are a way of breaking up the Earth's curved surface into square-ish chunks. There are many levels to S2 Cells, with higher level cells representing a smaller area. The entire Earth is covered by 6 level 0 (aka L0) S2 Cells. Each L0 cell is made up of 4 L1 S2 Cells. Each L1 S2 Cell is made up of 4 L2 S2 Cells, and so on. S2 Cells are of great significance to Pokéstop submissions, with L14 (roughly 500m*500m) and L17 (roughly 60m*60m) cells being the most important.</p>
+    <p>Only one Pokéstop can exist in a L17 cell*. So, if one of these NSW Survey Marks shares an L17 cell with an existing Pokéstop, it is not suitable for submission. This tool is therefore useful for seeing which nearby Survey Marks are in currently unoccupied L17 cells, making them suitable candidates. L14 cells are used for Gyms. Players cannot nominate a place to be a Gym; they merely nominate places to be stops. When enough stops are in close enough proximity, one will be converted into a Gym. Specifically, once there are 2 Pokéstops within an L14 cell, one will be converted to a Gym. When there are 6, another will be converted to a gym, and the maximum of 3 Gyms will be reached when there are 20 Pokéstops within an L14 cell. So, this tool is useful for showing how close L14 cells are to receiving another Gym. Two NSW Survey Marks may be near each other but in different L14 cells. If one L14 cell has 5 Pokéstops, and the other has 7, it may be worth prioritising getting the NSW Survey Mark in the first cell nominated and approved since this will lead to another Gym in that cell being created, whereas the one in the other L14 cell will not.</p>
+    <p>*There are technically ways to bypass this requirement by changing the location of existing stops, but this is impractical.</p>
+</body>
+
+</html>

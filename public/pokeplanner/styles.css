@@ -1,0 +1,72 @@
+/* https://material.io/design/color/the-color-system.html#tools-for-picking-colors using 6666EC as the base */
+
+body {
+	font-family: 'Ubuntu', sans-serif;
+}
+
+h1 {
+	background-color: #66a9ec;
+	padding: 0.5em 0em;
+}
+pre {
+	display: block;
+	background-color: rgb(240, 240, 240);
+	width: max-content;
+	padding: 0.2em;
+}
+
+#output {
+	background-color: initial;
+}
+
+#plan {
+	padding: 0.1em 1em;
+    font-size: 1em;
+    color: white;
+    background: #66a9ec;
+    border: 1px solid #a966ec;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+#plan:hover {
+	background: #a966ec;
+}
+
+#plan:active {
+	background: #6666ec;
+}
+
+#output .L14 {
+	margin: 1em 0em;
+	padding: 0.5em;
+	border: 2px solid black;
+	border-collapse: collapse;
+	width: max-content
+}
+
+#output .L17 {
+	margin-left: 1em;
+	padding: 0.3em;
+	border: 1px solid grey;	
+}
+
+#output .L17 .stop {
+	padding: 0.2em;
+	margin-left: 2em;
+}
+
+#key {
+	width: max-content;
+}
+
+.stop.potential {
+	border: 2px solid #e0e0e0;
+}
+
+.stop.existing {
+	border: 2px solid #66a9ec;
+}
+
+.stop.existing.gym {
+	border: 2px solid #ecec66;
+}

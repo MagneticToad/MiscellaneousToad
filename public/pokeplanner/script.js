@@ -187,7 +187,7 @@ function updateResponse() {
     l14div = document.createElement("div");
     l14div.classList.add("L14");
     let count = countStops(stopData[gymCell]);
-    l14div.innerHTML = `L14 Cell ${gymCell} has ${count} stop${count == 1 ? "" : "s"} inside it, ${stopsNeededForNextGym(count)} more for gym:`;
+    l14div.innerHTML = `L14 Cell ${gymCell} has ${count} stop${count == 1 ? "" : "s"} inside it; ${stopsNeededForNextGym(count)} more for a new gym:`;
     for (let stopCell in stopData[gymCell]) {
       l17div = document.createElement("div");
       l17div.classList.add("L17");

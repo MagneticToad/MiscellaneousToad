@@ -19,6 +19,11 @@ Maybe long-term things to do:
 - Look at https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties for TMIs
 - Config file for both back and front end
 - Remove megaobject parameters (particularly in back end)
+
+
+###Features for the short term
+-Timer!!! https://stackoverflow.com/questions/51207054/aws-lambda-execute-function-b-10-minutes-after-function-a or https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html
+-Prompt scaffold (e.g. for Michael Phelps, players can see _______ ______)
 */
 var localMode;
 var webSocket;
@@ -231,7 +236,7 @@ function showConnecting() {
 
 function disconnect() {
 	showDisconnect();
-	navigateTo("config.landingPage");
+	navigateTo(config.landingPage);
 }
 
 function showDisconnect() {
@@ -327,12 +332,12 @@ function processMessage(data) {
 			notifyLobbyNotFound();
 			break;
 		}
-		case "settingsChanged": {
-			refreshSettings(message.newSettings);
+		case "settingChanged": {
+			refreshSetting(message.setting, message.newValue);
 			break;
 		}
 		case "beginGame": {
-			beginGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.you, message.lobbyCode, message.maxRounds);
+			beginGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.promptMask, message.you, message.lobbyCode, message.maxRounds);
 			break;
 		}
 		case "incomingClue": {
@@ -348,7 +353,7 @@ function processMessage(data) {
 			break;
 		}
 		case "continueGame": {
-			continueGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.you, message.maxRounds);
+			continueGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.promptMask, message.you, message.maxRounds);
 			break;
 		}
 		case "gameEnded": {
@@ -356,7 +361,7 @@ function processMessage(data) {
 			break;
 		}
 		case "promptSelected": {
-			processPromptSelected(message.youAreDescriber, message.category, message.prompt, message.you, message.round, message.describerName, message.maxRounds);
+			processPromptSelected(message.youAreDescriber, message.category, message.prompt, message.promptMask, message.you, message.round, message.describerName, message.maxRounds);
 			break;
 		}
 	}
@@ -543,6 +548,7 @@ function attemptChangeSetting(settingId) {
 			case "oneGuesser":
 			case "timer":
 			case "promptOptions":
+			case "promptMasks":
 				message.setting = settingId;
 				message.newValue = $(`#${settingId}`)[0].checked;
 				break;
@@ -559,30 +565,35 @@ function attemptChangeSetting(settingId) {
 
 function refreshSettings(newSettings) {
 	Object.keys(newSettings).forEach((setting) => {
-		switch (setting) { //some settings have different presentations
-			case "mode":
-				if (newSettings[setting] == "FFA") { //if mode if FFA
-					$("#teamsSettings .subSettings *").prop('disabled', true);
-					$("#ffaSettings .subSettings *").prop('disabled', false);
-				} else { //if mode is teams
-					$("#teamsSettings .subSettings *").prop('disabled', false);
-					$("#ffaSettings .subSettings *").prop('disabled', true);
-				}
-				$(`#${newSettings[setting]}`)[0].checked = true; //select using value which is id of radio button
-				break;
-			case "timer":
-				$("#timerTime").prop('disabled', !newSettings[setting]); //disabled timer select if timer is off and vice versa
-				//no break; want to fall through to promptOptions
-			case "oneGuesser":
-			case "promptOptions":
-				$(`#${setting}`)[0].checked = newSettings[setting];
-				break;
-			case "rounds":
-			case "timerTime":
-				$(`#${setting}`)[0].value = newSettings[setting];
-				break;
-		}
+		refreshSetting(setting, newSettings[setting]);
 	});
+}
+
+function refreshSetting(setting, value) {
+	switch (setting) { //some settings have different presentations
+		case "mode":
+			if (value == "FFA") { //if mode if FFA
+				$("#teamsSettings .subSettings *").prop('disabled', true);
+				$("#ffaSettings .subSettings *").prop('disabled', false);
+			} else { //if mode is teams
+				$("#teamsSettings .subSettings *").prop('disabled', false);
+				$("#ffaSettings .subSettings *").prop('disabled', true);
+			}
+			$(`#${value}`)[0].checked = true; //select using value which is id of radio button
+			break;
+		case "timer":
+			$("#timerTime").prop('disabled', !value); //disabled timer select if timer is off and vice versa
+			//no break; want to fall through to promptOptions
+		case "oneGuesser":
+		case "promptOptions":
+		case "promptMasks":
+			$(`#${setting}`)[0].checked = value;
+			break;
+		case "rounds":
+		case "timerTime":
+			$(`#${setting}`)[0].value = value;
+			break;
+	}
 }
 
 function emojiSearchChange(message) {
@@ -690,22 +701,22 @@ function toggleFastSearch() {
 	$("#emojiSearchButton")[0].disabled = true;
 }
 
-function beginGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, lobbyCode, maxRounds) {
+function beginGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, lobbyCode, maxRounds) {
 	lastRound = 0;
 	resetElement("#guessesPanel");
-	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds);
+	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds);
 	document.title = `${config.nameOfGame} - ${lobbyCode}`;
 	navigateTo("gamePage");
 }
 
-function continueGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds) {
+function continueGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds) {
 	resetElement("#guessInput");
 	$("#guessInput")[0].oninput("");
-	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds);
+	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds);
 }
 
 function endGame(youAreDescriber, otherPlayers, round, describer, you, lobbyCode, maxRounds, settings) {
-	refreshClueColumn(false, true, round, undefined, undefined, undefined, maxRounds); //just want an empty column here
+	refreshClueColumn(false, true, round, undefined, undefined, undefined, undefined, maxRounds); //just want an empty column here
 	refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber);
 	showGameMessage("Game has ended");
 	showWinners(otherPlayers, describer, you, youAreDescriber);
@@ -768,9 +779,9 @@ function showWinners(otherPlayers, describer, you, youAreDescriber) {
 	}
 }
 
-function showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, you, maxRounds) {
+function showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds) {
 	refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber);
-	refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptOptions, maxRounds);
+	refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptMask, promptOptions, maxRounds);
 	showGameProgress(round, waitingForSelection, describer.username, category);
 }
 
@@ -801,7 +812,7 @@ function refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber) {
 	}
 }
 
-function refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptOptions, maxRounds) {
+function refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptMask, promptOptions, maxRounds) {
 	//prompt will be undefined if the player is not describer
 	//promptOptions will also be undefined if there are no options to be shown
 	resetElement("#emojiClues");
@@ -839,7 +850,7 @@ function refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, 
 			$("#clueInput").show();
 			$("#guessInputPanel").hide();
 		} else {
-			$("#topicHolder")[0].innerHTML = `Round ${round} of ${maxRounds}: ${category}`;
+			$("#topicHolder")[0].innerHTML = `Round ${round} of ${maxRounds} | ${category}` + (promptMask ? ` | ${promptMask}` : "");
 			$("#clueInput").hide();
 			
 			//showing the input panel scrolls the messages up a bit
@@ -891,9 +902,9 @@ function attemptSelectPrompt(selection) {
 	}
 }
 
-function processPromptSelected(youAreDescriber, category, prompt, you, round, describerName, maxRounds) {
+function processPromptSelected(youAreDescriber, category, prompt, promptMask, you, round, describerName, maxRounds) {
 	let waitingForSelection = false; //no longer waiting; it has been chosen
-	refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, undefined, maxRounds); //pass promptOptions as undefined as there will be none given that a prompt was just chosen
+	refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptMask, undefined, maxRounds); //pass promptOptions as undefined as there will be none given that a prompt was just chosen
 	showGameMessage(`${describerName} has chosen a '${category}'`);1
 }
 

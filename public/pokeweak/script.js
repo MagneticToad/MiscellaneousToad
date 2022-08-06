@@ -2,26 +2,6 @@ var pokemonGoMode = true;
 
 var SHOW_LIMIT = 25;
 
-let typeSymbols = {"Normal": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Pok%C3%A9mon_Normal_Type_Icon.svg",
-"Fire": "https://upload.wikimedia.org/wikipedia/commons/5/56/Pok%C3%A9mon_Fire_Type_Icon.svg",
-"Water": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Pok%C3%A9mon_Water_Type_Icon.svg",
-"Grass": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Pok%C3%A9mon_Grass_Type_Icon.svg",
-"Electric": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Pok%C3%A9mon_Electric_Type_Icon.svg",
-"Ice": "https://upload.wikimedia.org/wikipedia/commons/8/88/Pok%C3%A9mon_Ice_Type_Icon.svg",
-"Fighting": "https://upload.wikimedia.org/wikipedia/commons/b/be/Pok%C3%A9mon_Fighting_Type_Icon.svg",
-"Poison": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Pok%C3%A9mon_Poison_Type_Icon.svg",
-"Ground": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Pok%C3%A9mon_Ground_Type_Icon.svg",
-"Flying": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Pok%C3%A9mon_Flying_Type_Icon.svg",
-"Psychic": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Pok%C3%A9mon_Psychic_Type_Icon.svg",
-"Bug": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Pok%C3%A9mon_Bug_Type_Icon.svg",
-"Rock": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Pok%C3%A9mon_Rock_Type_Icon.svg",
-"Ghost": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Pok%C3%A9mon_Ghost_Type_Icon.svg",
-"Dragon": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Pok%C3%A9mon_Dragon_Type_Icon.svg",
-"Dark": "https://upload.wikimedia.org/wikipedia/commons/0/09/Pok%C3%A9mon_Dark_Type_Icon.svg",
-"Steel": "https://upload.wikimedia.org/wikipedia/commons/3/38/Pok%C3%A9mon_Steel_Type_Icon.svg",
-"Fairy": "https://upload.wikimedia.org/wikipedia/commons/0/08/Pok%C3%A9mon_Fairy_Type_Icon.svg"}
-
-
 function search() {
 	let table = document.querySelector("#results");
 	if (pokemonGoMode) {
@@ -77,7 +57,7 @@ function search() {
 				}
 				
 				let img = document.createElement("img");
-				img.src = typeSymbols[type];
+				img.src = `type-symbols/${type}.png`;
 				switch (netPosition) {
 					case -2:
 						doubleResistanceCell.appendChild(img);
@@ -111,11 +91,11 @@ function search() {
 			let innerDiv =  document.createElement("div");
 			innerDiv.classList.add("pokemonTypes");
 			let type1 = document.createElement("img");
-			type1.src = typeSymbols[pokemon.type1];
+			type1.src = `type-symbols/${pokemon.type1}.png`;
 			innerDiv.appendChild(type1);
 			if (pokemon.type2) {
 				let type2 = document.createElement("img");
-				type2.src = typeSymbols[pokemon.type2];
+				type2.src = `type-symbols/${pokemon.type2}.png`;
 				innerDiv.appendChild(type2);
 			}
 			

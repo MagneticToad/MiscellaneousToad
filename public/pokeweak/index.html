@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>PokéWeak</title>
+	<link rel="icon" href="https://openmoji.org/data/color/svg/1F494.svg">
+	<script src="script.js"></script>
+	<script src="pokemonData.js"></script>
+	<script src="typeData.js"></script>
+	<link rel="stylesheet" href="styles.css">
+	<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body onload="search()">
+	<input type="text" id="search" oninput="search()" placeholder="Type Pokémon name..."></input>
+	<input type="checkbox" id="pokemonGoMode" name="pokemonGoMode" onclick="toggleMode()" checked></input>
+	<label for="pokemonGoMode">Pokémon Go mode</label>
+	<br>
+	<br>
+
+	<table id="results"></table>
+
+</body>

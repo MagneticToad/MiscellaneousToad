@@ -1,0 +1,97 @@
+body {
+	font-family: 'Ubuntu', sans-serif;
+}
+
+#results {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+#results * {
+	border: 1px solid black;
+	text-align: center;
+}
+
+#results img, #results div, #results p {
+	border: 0px solid black;
+}
+
+#search {
+	padding: 10px 5px;
+	line-height: 14px;
+	width: 200px;
+}
+
+th {
+	top: 0;
+	position: sticky;
+	background: white;
+}
+
+th.doubleWeak {
+	background-color: rgba(30, 139, 59, 0.5);
+}
+
+th.weak {
+	background-color: rgba(162,208,127,0.5);
+}
+
+th.neutral {
+	background-color: rgba(255,235,132,0.5);
+}
+
+th.resist {
+	background-color: rgba(219, 129, 129, 0.5);
+}
+
+th.doubleResist {
+	background-color: rgba(216, 31, 34, 0.5);
+}
+
+th.tripleResist, th.immune {
+	background-color: rgba(0,0,0,0.5);
+}
+
+td.doubleWeak {
+	background-color: rgba(30, 139, 59, 0.25);
+}
+
+td.weak {
+	background-color: rgba(162,208,127,0.25);
+}
+
+td.neutral {
+	background-color: rgba(255,235,132,0.25);
+}
+
+td.resist {
+	background-color: rgba(219, 129, 129, 0.25);
+}
+
+td.doubleResist {
+	background-color: rgba(216, 31, 34, 0.25);
+}
+
+td.tripleResist, td.immune {
+	background-color: rgba(0,0,0,0.25);
+}
+
+th.name, th.sprite {
+	background-color: rgba(102,169,236,0.125);
+}
+
+td.name, td.sprite {
+	background-color: rgba(102,169,236,0.0625);
+}
+
+.pokemonTypes img {
+	width: 50px;
+}
+
+td {
+	padding: 0px 5px 0px;
+}
+
+th {
+	padding: 0px 5px 0px;
+}

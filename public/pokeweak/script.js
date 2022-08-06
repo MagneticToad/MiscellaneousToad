@@ -2,24 +2,24 @@ var pokemonGoMode = true;
 
 var SHOW_LIMIT = 25;
 
-let typeSymbols = {"Normal": "https://static.wikia.nocookie.net/pokemongo/images/4/43/Icon_Normal.png/revision/latest?cb=20171219195828",
-"Fire": "https://static.wikia.nocookie.net/pokemongo/images/0/0a/Icon_Fire.png/revision/latest?cb=20171219195825",
-"Water": "https://static.wikia.nocookie.net/pokemongo/images/6/65/Icon_Water.png/revision/latest?cb=20171219195830",
-"Grass": "https://static.wikia.nocookie.net/pokemongo/images/0/0a/Icon_Grass.png/revision/latest?cb=20171219195826",
-"Electric": "https://static.wikia.nocookie.net/pokemongo/images/1/1c/Icon_Electric.png/revision/latest?cb=20171219195824",
-"Ice": "https://static.wikia.nocookie.net/pokemongo/images/5/52/Icon_Ice.png/revision/latest?cb=20171219195828",
-"Fighting": "https://static.wikia.nocookie.net/pokemongo/images/f/f0/Icon_Fighting.png/revision/latest?cb=20171219195825",
-"Poison": "https://static.wikia.nocookie.net/pokemongo/images/2/26/Icon_Poison.png/revision/latest?cb=20171219195828",
-"Ground": "https://static.wikia.nocookie.net/pokemongo/images/7/71/Icon_Ground.png/revision/latest?cb=20171219195827",
-"Flying": "https://static.wikia.nocookie.net/pokemongo/images/b/b0/Icon_Flying.png/revision/latest?cb=20171219195826",
-"Psychic": "https://static.wikia.nocookie.net/pokemongo/images/c/ce/Icon_Psychic.png/revision/latest?cb=20171219195829",
-"Bug": "https://static.wikia.nocookie.net/pokemongo/images/8/88/Icon_Bug.png/revision/latest?cb=20171219195822",
-"Rock": "https://static.wikia.nocookie.net/pokemongo/images/5/57/Icon_Rock.png/revision/latest?cb=20171219195830",
-"Ghost": "https://static.wikia.nocookie.net/pokemongo/images/7/7d/Icon_Ghost.png/revision/latest?cb=20171219195826",
-"Dragon": "https://static.wikia.nocookie.net/pokemongo/images/d/d4/Icon_Dragon.png/revision/latest?cb=20171219195823",
-"Dark": "https://static.wikia.nocookie.net/pokemongo/images/e/e9/Icon_Dark.png/revision/latest?cb=20171219195823",
-"Steel": "https://static.wikia.nocookie.net/pokemongo/images/3/38/Icon_Steel.png/revision/latest?cb=20171219195830",
-"Fairy": "https://static.wikia.nocookie.net/pokemongo/images/7/7f/Icon_Fairy.png/revision/latest?cb=20171219195824"}
+let typeSymbols = {"Normal": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Pok%C3%A9mon_Normal_Type_Icon.svg",
+"Fire": "https://upload.wikimedia.org/wikipedia/commons/5/56/Pok%C3%A9mon_Fire_Type_Icon.svg",
+"Water": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Pok%C3%A9mon_Water_Type_Icon.svg",
+"Grass": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Pok%C3%A9mon_Grass_Type_Icon.svg",
+"Electric": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Pok%C3%A9mon_Electric_Type_Icon.svg",
+"Ice": "https://upload.wikimedia.org/wikipedia/commons/8/88/Pok%C3%A9mon_Ice_Type_Icon.svg",
+"Fighting": "https://upload.wikimedia.org/wikipedia/commons/b/be/Pok%C3%A9mon_Fighting_Type_Icon.svg",
+"Poison": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Pok%C3%A9mon_Poison_Type_Icon.svg",
+"Ground": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Pok%C3%A9mon_Ground_Type_Icon.svg",
+"Flying": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Pok%C3%A9mon_Flying_Type_Icon.svg",
+"Psychic": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Pok%C3%A9mon_Psychic_Type_Icon.svg",
+"Bug": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Pok%C3%A9mon_Bug_Type_Icon.svg",
+"Rock": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Pok%C3%A9mon_Rock_Type_Icon.svg",
+"Ghost": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Pok%C3%A9mon_Ghost_Type_Icon.svg",
+"Dragon": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Pok%C3%A9mon_Dragon_Type_Icon.svg",
+"Dark": "https://upload.wikimedia.org/wikipedia/commons/0/09/Pok%C3%A9mon_Dark_Type_Icon.svg",
+"Steel": "https://upload.wikimedia.org/wikipedia/commons/3/38/Pok%C3%A9mon_Steel_Type_Icon.svg",
+"Fairy": "https://upload.wikimedia.org/wikipedia/commons/0/08/Pok%C3%A9mon_Fairy_Type_Icon.svg"}
 
 
 function search() {
@@ -98,6 +98,7 @@ function search() {
 						tripleResistanceCell.appendChild(img);
 						break;
 				}
+				img.width = 62;
 			}
 			
 			let div = document.createElement("div");

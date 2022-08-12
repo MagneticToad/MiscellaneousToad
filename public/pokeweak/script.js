@@ -2,6 +2,27 @@ var pokemonGoMode = true;
 
 var SHOW_LIMIT = 25;
 
+var highlightSettings = {
+	"Normal": true,
+	"Flying": true,
+	"Water": true,
+	"Fighting": true,
+	"Poison": true,
+	"Ground": true,
+	"Rock": true,
+	"Bug": true,
+	"Ghost": true,
+	"Steel": true,
+	"Fire": true,
+	"Grass": true,
+	"Electric": true,
+	"Psychic": true,
+	"Ice": true,
+	"Dragon": true,
+	"Dark": true,
+	"Fairy": true
+}
+
 function search() {
 	let table = document.querySelector("#results");
 	if (pokemonGoMode) {
@@ -79,6 +100,7 @@ function search() {
 						break;
 				}
 				img.width = 62;
+				img.classList.add(type);
 			}
 			
 			let div = document.createElement("div");
@@ -128,4 +150,15 @@ function search() {
 function toggleMode() {
 	pokemonGoMode = !pokemonGoMode;
 	search();
+}
+
+function toggleHighlight(type) {
+	highlightSettings[type] = !highlightSettings[type];
+	let style = "";
+	for (var type in highlightSettings) {
+		if (!highlightSettings[type]) {
+			style += `img.${type} {filter: brightness(35%)} `;
+		}
+	}
+	document.getElementById("typeHighlighting").innerHTML = style;
 }

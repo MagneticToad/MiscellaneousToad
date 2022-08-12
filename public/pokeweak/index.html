@@ -9,14 +9,35 @@
 	<script src="typeData.js"></script>
 	<link rel="stylesheet" href="styles.css">
 	<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500&display=swap" rel="stylesheet">
+	<style id="typeHighlighting"></style>
 </head>
 <body onload="search()">
-	<input type="text" id="search" oninput="search()" placeholder="Type Pokémon name..."></input>
-	<input type="checkbox" id="pokemonGoMode" name="pokemonGoMode" onclick="toggleMode()" checked></input>
-	<label for="pokemonGoMode">Pokémon Go mode</label>
+	<div class="topSection">
+		<input type="text" id="search" oninput="search()" placeholder="Type Pokémon name..."></input>
+		<input type="checkbox" id="pokemonGoMode" name="pokemonGoMode" onclick="toggleMode()" checked></input>
+		<label for="pokemonGoMode">Pokémon Go mode</label>
+		<div class="typeHighlightSelector">
+			<img src="type-symbols/Normal.png" class="Normal" onclick="toggleHighlight('Normal')">
+			<img src="type-symbols/Flying.png" class="Flying" onclick="toggleHighlight('Flying')">
+			<img src="type-symbols/Water.png" class="Water" onclick="toggleHighlight('Water')">
+			<img src="type-symbols/Fighting.png" class="Fighting" onclick="toggleHighlight('Fighting')">
+			<img src="type-symbols/Poison.png" class="Poison" onclick="toggleHighlight('Poison')">
+			<img src="type-symbols/Ground.png" class="Ground" onclick="toggleHighlight('Ground')">
+			<img src="type-symbols/Rock.png" class="Rock" onclick="toggleHighlight('Rock')">
+			<img src="type-symbols/Bug.png" class="Bug" onclick="toggleHighlight('Bug')">
+			<img src="type-symbols/Ghost.png" class="Ghost" onclick="toggleHighlight('Ghost')">
+			<img src="type-symbols/Steel.png" class="Steel" onclick="toggleHighlight('Steel')">
+			<img src="type-symbols/Fire.png" class="Fire" onclick="toggleHighlight('Fire')">
+			<img src="type-symbols/Grass.png" class="Grass" onclick="toggleHighlight('Grass')">
+			<img src="type-symbols/Electric.png" class="Electric" onclick="toggleHighlight('Electric')">
+			<img src="type-symbols/Psychic.png" class="Psychic" onclick="toggleHighlight('Psychic')">
+			<img src="type-symbols/Ice.png" class="Ice" onclick="toggleHighlight('Ice')">
+			<img src="type-symbols/Dragon.png" class="Dragon" onclick="toggleHighlight('Dragon')">
+			<img src="type-symbols/Dark.png" class="Dark" onclick="toggleHighlight('Dark')">
+			<img src="type-symbols/Fairy.png" class="Fairy" onclick="toggleHighlight('Fairy')">
+		</div>
+	</div>
 	<br>
-	<br>
-
 	<table id="results"></table>
 
 </body>

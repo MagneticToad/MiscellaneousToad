@@ -95,3 +95,18 @@ td {
 th {
 	padding: 0px 5px 0px;
 }
+
+.topSection {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.typeHighlightSelector {
+	display: inline-block;
+	margin-left: auto;
+}
+
+.typeHighlightSelector img {
+	cursor: pointer;
+}

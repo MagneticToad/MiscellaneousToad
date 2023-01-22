@@ -1,16 +1,20 @@
 /*
-General todo:
--Tag emojis
--Mnigames when waiting
--Cleaning
--Timer setting
-
+To officialy complete V1.0:
+-[DONE] Go through all of AWS code and clean/refactor etc... be happy with it
+-QA/edge-case fixing
+	-Players leaving at all points (e.g. leaving while selecting prompt currently breaks), in between DB updates within a js function etc.
+	-Players joining at inconvenient times
+-Add timer (timestamp of turnInProgress being set and lobby code should be a good combo, since two lobbies can't have the same code at once)
+-Implement (or remove) current settings (just oneGuesser I think) (remove; I think one guesser is basically always preferred), possibly make prompt options mandatory
+-Get Alpine on the front end
+-Clean front end
+-Clear long-term settings (teams, etc.)
+-Visual overhaul with Tailwind and Alpine
 
 Maybe long-term things to do:
 -Each onMessage type is its own function; api decides where to send
 -Send lobbyCode with request so server doesn't call connections every time, but check whether player is actually in lobby once lobby data is retrieved
 -Better refreshing of players; keep some global variables of current players
--[?] foreach is bad? Use for?
 */
 
 /*
@@ -20,10 +24,8 @@ Maybe long-term things to do:
 - Config file for both back and front end
 - Remove megaobject parameters (particularly in back end)
 
-
 ###Features for the short term
 -Timer!!! https://stackoverflow.com/questions/51207054/aws-lambda-execute-function-b-10-minutes-after-function-a or https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html
--Prompt scaffold (e.g. for Michael Phelps, players can see _______ ______)
 */
 var localMode;
 var webSocket;
@@ -364,6 +366,11 @@ function processMessage(data) {
 			processPromptSelected(message.youAreDescriber, message.category, message.prompt, message.promptMask, message.you, message.round, message.describerName, message.maxRounds);
 			break;
 		}
+		case "lobbyDeleted": {
+			alert("Lobby was deleted"); //could do something more advanced but this is extremely rare
+			leaveLobby();
+			break;
+		}
 	}
 }
 
@@ -426,7 +433,7 @@ function scrollElement(element) {
 
 function attemptCreateNewGame() {
 	if (webSocket?.readyState == 1) {
-		addButtonFeedback("#createGame", "orange", "Creating...", true);	
+		addButtonFeedback("#createGame", "orange", "Creating...", true);
 		send({
 			type: "createLobby"
 		});
@@ -643,6 +650,7 @@ function createEmojiImage(code) {
 	emojiImage.alt = emojis[code].name;
 	emojiImage.title = emojis[code].name;
 	emojiImage.dataset.code = code;
+	emojiImage.onmousedown = () => false; //stop the emoji images from 'stealing' focus from the search box
 	return emojiImage;
 }
 
@@ -727,7 +735,7 @@ function endGame(youAreDescriber, otherPlayers, round, describer, you, lobbyCode
 	Similarly, it wants you to be your username, not an object with your username and score
 	Additionally, we have describer here as a separate entity, so we need to merge it with otherPlayers if it is another player (i.e. not you)
 	*/
-	if (!youAreDescriber) { //if the describer is a different player
+	if (describer && !youAreDescriber) { //if the describer is still in the game and it is not you
 		otherPlayers.push(describer); //add it to the list of other players
 	}
 	setTimeout(() => moveToLobby(lobbyCode, settings, otherPlayers.map(x => x.username), you.username), 10000);
@@ -742,7 +750,7 @@ function showWinners(otherPlayers, describer, you, youAreDescriber) {
 	if (you.score > maxScore) {
 		maxScore = you.score;
 	}
-	if (!youAreDescriber && describer.score > maxScore) {
+	if (!youAreDescriber && describer?.score > maxScore) {
 		maxScore = you.score;
 	}
 	for (let otherPlayer of otherPlayers) {
@@ -756,7 +764,7 @@ function showWinners(otherPlayers, describer, you, youAreDescriber) {
 	if (you.score == maxScore) {
 		winners.push(you.username);
 	}
-	if (!youAreDescriber && describer.score == maxScore) {
+	if (!youAreDescriber && describer?.score == maxScore) {
 		winners.push(describer.username);
 	}
 	for (let otherPlayer of otherPlayers) {
@@ -795,8 +803,8 @@ function refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber) {
 	para.appendChild(t);
 	box.appendChild(para);
 
-	//add describer separately, unless it is you (in which case you will already have the pencil from above)
-	if (!youAreDescriber) {
+	//add describer separately if there is one and it isn't you (in which case you will already have the pencil from above)
+	if (describer && !youAreDescriber) {
 		para = document.createElement("P");
 		t = document.createTextNode(`[${describer.score}] ${describer.username} ✎`);
 		para.appendChild(t);

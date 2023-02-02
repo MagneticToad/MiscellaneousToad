@@ -1,962 +1,222 @@
-/*
-To officialy complete V1.0:
--[DONE] Go through all of AWS code and clean/refactor etc... be happy with it
--QA/edge-case fixing
-	-Players leaving at all points (e.g. leaving while selecting prompt currently breaks), in between DB updates within a js function etc.
-	-Players joining at inconvenient times
--Add timer (timestamp of turnInProgress being set and lobby code should be a good combo, since two lobbies can't have the same code at once)
--Implement (or remove) current settings (just oneGuesser I think) (remove; I think one guesser is basically always preferred), possibly make prompt options mandatory
--Get Alpine on the front end
--Clean front end
--Clear long-term settings (teams, etc.)
--Visual overhaul with Tailwind and Alpine
-
-Maybe long-term things to do:
--Each onMessage type is its own function; api decides where to send
--Send lobbyCode with request so server doesn't call connections every time, but check whether player is actually in lobby once lobby data is retrieved
--Better refreshing of players; keep some global variables of current players
-*/
-
-/*
-###Cleaning to do
-- Address suggestions
-- Look at https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties for TMIs
-- Config file for both back and front end
-- Remove megaobject parameters (particularly in back end)
-
-###Features for the short term
--Timer!!! https://stackoverflow.com/questions/51207054/aws-lambda-execute-function-b-10-minutes-after-function-a or https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html
-*/
-var localMode;
-var webSocket;
-var lastRound = 0; //keep the last known round number; only display round number when it changes
-
-//an object temporarily used by the direct join via url function
-var directJoining = {
-	joining: false,
-	code: null
-};
-
-//Some elements change to give feedback and should return to their original state when the feedback is finished
-//These elements have class 'resettable'
-//This object saves the initial state of each of these elements so they can later be reset by the resetElement function
-var savedStates = {};
-
-//decides whether to use files locally or get them from openmoji
-function toggleLocalMode() {
-	localMode = !localMode;
-	$("#toggleModeButton")[0].innerHTML = localMode ? "Local mode" : "Online mode";
-}
-
-function initPageManagement() {
-	console.log("Page loaded");
-	localMode = config.devMode;
-	$(".page").hide();
-	$(`#${config.landingPage}`).show();
-	
-	if (config.devMode) {
-		for (var page of $(".page")) {
-			console.log(`Creating button for page ${page.id}`);
-			let navigationButton = document.createElement("button");
-			navigationButton.value = page.id;
-			navigationButton.onclick = function(e) {
-				navigateTo(e.target.value);
-			}
-			navigationButton.innerHTML = page.id;
-			$("#navigationPane")[0].appendChild(navigationButton);
-		}
-	} else {
-		$("#navigationPane").hide();
-	}
-	
-	//move these??
-	$("#globalMessage").on("keyup", function(e) {
-		if (e.keyCode == 13) {
-			if (!$("#globalSendButton")[0].disabled) { //sync with button disability so you cannot easily bypass client checks
-				globalSend();
-			}
-		}
-	});
-	$("#username").on("keyup", function(e) {
-		if (e.keyCode == 13) {
-			if (!$("#connectButton")[0].disabled) {
-				attemptConnect();
-			}
-		}
-	});
-	$("#directJoinUsername").on("keyup", function(e) {
-		if (e.keyCode == 13) {
-			if (!$("#directJoinConnectButton")[0].disabled) {
-				attemptConnect();
-			}
-		}
-	});
-	$("#lobbyCode").on("keyup", function(e) {
-		if (e.keyCode == 13) {
-			if (!$("#joinGame")[0].disabled) {
-				attemptJoinGame();
-			}
-		}
-	});
-	$("#lobbyMessage").on("keyup", function(e) {
-		if (e.keyCode == 13) {
-			if (!$("#lobbySendButton")[0].disabled) {
-				lobbySend();
-			}
-		}
-	});
-	$("#emojiSearchBox").on("keyup", function(e) {
-		if (e.keyCode == 13) {
-			if (!$("#emojiSearchButton")[0].disabled) {
-				emojiSearch(true);
-			}
-		}
-	});
-	$("#guessInput").on("keyup", function(e) {
-		if (e.keyCode == 13) {
-			if (!$("#sendGuessButton")[0].disabled) {
-				attemptSendGuess();
-			}
-		}
-	});
-	
-	$('.resettable').each(function() { //for each resettable element
-		var currentElement = $(this); //get the jquery wrapper
-		savedStates[`#${currentElement[0].id}`] = currentElement.clone(true, true); //store a clone with its id as a key
-	});
-	
-	if (URLContainsDirectJoin(window.location.href)) {
-		let code = window.location.href.slice(-5).substr(0, 5); //gets the code
-		directJoining.joining = true;
-		directJoining.code = code;
-		$("#directJoinCodeHolder")[0].innerHTML = `Join lobby ${code}`;
-		navigateTo("directJoinPage");
-	}
-}
-
-function navigateTo(pageName) {
-	console.log(`Navigating to ${pageName}`);
-	$(".page").hide();
-	$(`#${pageName}`).show();
-}
-
-function resetElement(elementId) {
-	$(elementId).replaceWith(savedStates[elementId].clone(true, true));
-}
-
-function addButtonFeedback(id, colour, text, disabled) {
-	let element = $(id)[0]
-	element.classList.add(colour);
-	element.innerHTML = text;
-	element.disabled = disabled;
-}
-
-function usernameChange(username) {
-	$("#connectButton")[0].disabled = !(/^[a-zA-Z0-9][ a-zA-Z0-9]{0,14}$/.test(username));
-	if (/^ +$/.test(username)) { //if only spaces
-		$("#username")[0].value = "";
-	}
-}
-
-function directJoinUsernameChange(username) {
-	$("#directJoinConnectButton")[0].disabled = !(/^[a-zA-Z0-9][ a-zA-Z0-9]{0,14}$/.test(username));
-	if (/^ +$/.test(username)) { //if only spaces
-		$("#directJoinUsername")[0].value = "";
-	}
-}
-
-function lobbyCodeChange(code) {
-	code = code.replace(/[^a-zA-Z]/, ""); //strip non alphabet characters
-	code = code.toUpperCase(); //convert to upper case
-	$("#lobbyCode")[0].value = code;
-	$("#joinGame")[0].disabled = !(/^[A-Z]{5}$/.test(code));
-}
-
-function globalMessageChange(message) {
-	$("#globalSendButton")[0].disabled = (message.length == 0);
-}
-
-function lobbyMessageChange(message) {
-	$("#lobbySendButton")[0].disabled = (message.length == 0);
-}
-
-function attemptConnect() {
-	if (webSocket == undefined || webSocket.readyState == 3) {
-		var username = directJoining.joining ? $("#directJoinUsername")[0].value : $("#username")[0].value; //if directly joining, get the value from the direct join page; otherwise, the main login page
-		if (username.length > 0) {
-			webSocket = new WebSocket(`${config.socketURL}?username=${username}`);
-			showConnecting();
-			webSocket.onopen = function (event) {
-				connect();
-			}
-			webSocket.onclose = function (event) {
-				disconnect();
-			}
-			//###on error - "Connection failed" or something
-			webSocket.onmessage = function (event) {
-				console.log(event);
-				processMessage(event.data);
-			}
-		}
-	}
-}
-
-function connect() {
-	showConnect();
-	if (directJoining.joining) {
-		attemptJoinGame(directJoining.code);
-		directJoining.joining = false;
-	} else {
-		navigateTo("homePage");
-	}
-}
-
-function showConnect() {
-	for (let statusIndicator of $(".connectionStatus")) {
-		statusIndicator.classList.remove("orange");
-		statusIndicator.classList.add("green");
-		statusIndicator.innerHTML = "Connected";
-	}
-	$("#globalMessage")[0].disabled = false;
-	// $("#globalSendButton")[0].disabled = false;
-	$("#username")[0].disabled = true;
-	$("#directJoinUsername")[0].disabled = true;
-	$("#disconnectButton")[0].disabled = false;
-	$("#connectButton")[0].disabled = true;
-}
-
-function showConnecting() {
-	for (let statusIndicator of $(".connectionStatus")) {
-		statusIndicator.classList.remove("red");
-		statusIndicator.classList.add("orange");
-		statusIndicator.innerHTML = "Connecting";
-	}
-	addButtonFeedback("#directJoinConnectButton", "orange", "Joining...", true);
-	
-	$("#connectButton")[0].disabled = true;
-}
-
-function disconnect() {
-	showDisconnect();
-	navigateTo(config.landingPage);
-}
-
-function showDisconnect() {
-	for (let statusIndicator of $(".connectionStatus")) {
-		statusIndicator.classList.remove("green");
-		statusIndicator.classList.add("red");
-		statusIndicator.innerHTML = "Not connected";
-	}
-	
-	$("#globalMessage")[0].disabled = true;
-	// $("#globalSendButton")[0].disabled = true;
-	$("#username")[0].disabled = false;
-	$("#directJoinUsername")[0].disabled = false;
-	$("#disconnectButton")[0].disabled = true;
-	$("#connectButton")[0].disabled = $("#username")[0].value.length < 1;
-	$("#directJoinConnectButton")[0].disabled = $("#directJoinUsername")[0].value.length < 1;
-}
-
-function attemptDisconnect() {
-	if (webSocket?.readyState == 1) {	
-		webSocket.close();
-	}
-}
-
-function globalSend() {
-	if (webSocket?.readyState == 1) {	
-		messageBox = $("#globalMessage")[0];
-		var text = messageBox.value;
-		send({
-			type: "globalChatMessage",
-			message: text
-		});
-		messageBox.value = "";
-		messageBox.oninput("");
-	}
-}
-
-function lobbySend() {
-	if (webSocket != undefined && webSocket.readyState == 1) {	
-		messageBox = $("#lobbyMessage")[0];
-		var text = messageBox.value;
-		send({
-			type: "lobbyChatMessage",
-			message: text
-		});
-		messageBox.value = "";
-		messageBox.oninput("");
-	}
-}
-
-function processMessage(data) {
-	//Handles ALL messages from the socket
-	//Anything from a global chat message to a notification that a game has ended
-	message = JSON.parse(data);
-	switch (message.type) {
-		case "globalChatMessage": {
-			showGlobalMessage(message.sender, message.isSender, message.message);
-			break;
-		}
-		case "lobbyChatMessage": {
-			showLobbyMessage(message.sender, message.isSender, message.message);
-			break;
-		}
-		case "moveToLobby": {
-			moveToLobby(message.lobbyCode, message.settings, message.otherPlayers, message.you);
-			break;
-		}
-		case "playerJoinedLobby": { //when the game is in the lobby
-			refreshPlayers(message.otherPlayers, message.you);
-			break;
-		}
-		case "playerJoinedGame": { //when the game is in progress
-			refreshPlayersColumn(message.otherPlayers, message.describer, message.you, message.youAreDescriber);
-			break;
-		}
-		case "playerLeftLobby": { //when the game is in the lobby
-			refreshPlayers(message.newOtherPlayers, message.you);
-			break;
-		}
-		case "playerLeftGame": {
-			refreshPlayersColumn(message.otherPlayers, message.describer, message.you, message.youAreDescriber);
-			break;
-		}
-		case "leaveLobby": {
-			leaveLobby();
-			break;
-		}
-		case "invalidLobbyCode": {
-			notifyInvalidCode();
-			break;
-		}
-		case "lobbyNotFound": {
-			notifyLobbyNotFound();
-			break;
-		}
-		case "settingChanged": {
-			refreshSetting(message.setting, message.newValue);
-			break;
-		}
-		case "beginGame": {
-			beginGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.promptMask, message.you, message.lobbyCode, message.maxRounds);
-			break;
-		}
-		case "incomingClue": {
-			showEmojiClue(message.clue);
-			break;
-		}
-		case "incomingGuess": {
-			showGuess(message.guesser, message.isGuesser, message.guess);
-			break;
-		}
-		case "promptGuessed": {
-			showGameMessage(`${message.guesser} has guessed correctly! The prompt was '${message.prompt}'`);
-			break;
-		}
-		case "continueGame": {
-			continueGame(message.waitingForSelection, message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.promptOptions, message.prompt, message.category, message.promptMask, message.you, message.maxRounds);
-			break;
-		}
-		case "gameEnded": {
-			endGame(message.youAreDescriber, message.otherPlayers, message.round, message.describer, message.you, message.lobbyCode, message.maxRounds, message.settings);
-			break;
-		}
-		case "promptSelected": {
-			processPromptSelected(message.youAreDescriber, message.category, message.prompt, message.promptMask, message.you, message.round, message.describerName, message.maxRounds);
-			break;
-		}
-		case "lobbyDeleted": {
-			alert("Lobby was deleted"); //could do something more advanced but this is extremely rare
-			leaveLobby();
-			break;
-		}
-	}
-}
-
-function send(messageObj) {
-	//sends a messageObj
-	//adds the 'action: "onMessage"' attrbiute since all messages have that
-	if (webSocket?.readyState == 1) {
-		messageObj.action = "onMessage";
-		webSocket.send(JSON.stringify(messageObj));
-	}
-}
-
-function URLContainsDirectJoin(string) {
-	return /\?directJoin=[A-Z]{5}$/.test(string);
-}
-
-function showGlobalMessage(sender, isSender, message) {
-	var box = $("#globalMessages")[0];
-	var shouldScroll = isFullyScrolled(box);
-	
-	let para = document.createElement("P");
-	let t = document.createTextNode(`${sender}${isSender ? " (You)" : ""}: ${message}`);
-	para.appendChild(t);
-	$("#globalMessages")[0].appendChild(para);
-	
-	if (shouldScroll) {
-		scrollElement(box);
-	}
-}
-
-function showLobbyMessage(sender, isSender, message) {
-	var box = $("#lobbyMessages")[0];
-	var shouldScroll = isFullyScrolled(box);
-	
-	let para = document.createElement("P");
-	let t = document.createTextNode(`${sender}${isSender ? " (You)" : ""}: ${message}`);
-	para.appendChild(t);
-	$("#lobbyMessages")[0].appendChild(para);
-	
-	if (shouldScroll) {
-		scrollElement(box);
-	}
-}
-
-function hasVerticalScrollBar(element) {
-	return element.scrollHeight > element.clientHeight;
-}
-
-function getScrollPercentage(element) {
-	return 100 * element.scrollTop / (element.scrollHeight - element.clientHeight); 
-}
-
-function isFullyScrolled(element) {
-	return !(hasVerticalScrollBar(element) && (getScrollPercentage(element) < 100))
-}
-
-function scrollElement(element) {
-	element.scrollTop = element.scrollHeight;
-}
-
-function attemptCreateNewGame() {
-	if (webSocket?.readyState == 1) {
-		addButtonFeedback("#createGame", "orange", "Creating...", true);
-		send({
-			type: "createLobby"
-		});
-	}
-}
-
-function attemptJoinGame(code) {
-	//this function can take a code
-	//if the code is undefined, it uses the #lobbyCode value
-	if (webSocket?.readyState == 1) {
-		addButtonFeedback("#joinGame", "orange", "Joining...", true);
-		send({
-			type: "joinLobby",
-			lobbyCode: code ? code : $("#lobbyCode")[0].value //use a given code or the value of #lobbyCode if no code was given
-		});
-	}
-}
-
-function attemptStartGame() {
-	if (webSocket?.readyState == 1) {
-		addButtonFeedback("#startGame", "orange", "Starting...", true);
-	
-		send({
-			type: "startGame"
-		});
-	}
-}
-
-function attemptLeaveGame() {
-	if (webSocket?.readyState == 1) {
-		
-		resetElement("#createGame");
-		resetElement("#joinGame");
-		
-		addButtonFeedback("#leaveGame", "orange", "Leaving...", true);
-	
-		send({
-			type: "leaveLobby"
-		});
-	}
-}
-
-function moveToLobby(lobbyCode, settings, otherPlayers, you) {
-	/*
-	otherPlayers - array of string usernames of other players
-	you - string of your username
-	*/
-	document.title = `${config.nameOfGame} - ${lobbyCode}`;
-	$("#directJoinURLHolder")[0].value = `${window.location.href}${URLContainsDirectJoin(window.location.href) ? '' : `?directJoin=${lobbyCode}`}`;
-	$("#guessInput")[0].oninput("");
-	resetElement("#startGame");
-	resetElement("#leaveGame");
-	populateLobby(lobbyCode, settings, otherPlayers, you);
-	navigateTo("lobbyPage");
-}
-
-function populateLobby(lobbyCode, settings, otherPlayers, you) {
-	$("#displayLobbyCode")[0].innerHTML = `Join with code: ${lobbyCode}`;
-	
-	resetElement("#leaveGame");
-	
-	refreshPlayers(otherPlayers, you);
-	refreshSettings(settings);
-}
-
-function refreshPlayers(otherPlayers, you) {
-	$("#lobbyPlayerList")[0].innerHTML = "";
-
-	//add the player themselves (they will be on top)
-	let para = document.createElement("P");
-	let t = document.createTextNode(`${you} (You)`);
-	para.appendChild(t);
-	$("#lobbyPlayerList")[0].appendChild(para);
-
-	//then add the others
-	for (let player of otherPlayers) {
-		let para = document.createElement("P");
-		let t = document.createTextNode(player);
-		para.appendChild(t);
-		$("#lobbyPlayerList")[0].appendChild(para);
-	};
-	
-	$("#startGame")[0].disabled = !(Object.keys(otherPlayers).length > 0);
-}
-
-function leaveLobby() {
-	navigateTo("homePage");
-	let lobbyCode = $("#lobbyCode")[0];
-	lobbyCode.oninput(lobbyCode.value);
-	resetElement("#lobbyMessages");
-}
-
-function notifyInvalidCode() {
-	alert("Invalid code");
-	resetElement("#joinGame");
-	resetElement("#lobbyCode");
-}
-
-function notifyLobbyNotFound() {
-	alert("Could not find game");
-	resetElement("#joinGame");
-	resetElement("#lobbyCode");
-}
-
-function attemptChangeSetting(settingId) {
-	if (webSocket != undefined && webSocket.readyState == 1) {
-	
-		var message = {
-			type: "changeSetting",
-		};
-		
-		//distinguish between checkbox and radio buttons inputs because they have different implications
-		switch (settingId) {
-			case "FFA":
-			case "teams":
-				message.setting = "mode";
-				message.newValue = settingId;
-				break;
-			case "oneGuesser":
-			case "timer":
-			case "promptOptions":
-			case "promptMasks":
-				message.setting = settingId;
-				message.newValue = $(`#${settingId}`)[0].checked;
-				break;
-			case "rounds":
-			case "timerTime":
-				message.setting = settingId;
-				message.newValue = Number($(`#${settingId}`)[0].value);
-				break;
-		}
-		
-		send(message);
-	}
-}
-
-function refreshSettings(newSettings) {
-	Object.keys(newSettings).forEach((setting) => {
-		refreshSetting(setting, newSettings[setting]);
-	});
-}
-
-function refreshSetting(setting, value) {
-	switch (setting) { //some settings have different presentations
-		case "mode":
-			if (value == "FFA") { //if mode if FFA
-				$("#teamsSettings .subSettings *").prop('disabled', true);
-				$("#ffaSettings .subSettings *").prop('disabled', false);
-			} else { //if mode is teams
-				$("#teamsSettings .subSettings *").prop('disabled', false);
-				$("#ffaSettings .subSettings *").prop('disabled', true);
-			}
-			$(`#${value}`)[0].checked = true; //select using value which is id of radio button
-			break;
-		case "timer":
-			$("#timerTime").prop('disabled', !value); //disabled timer select if timer is off and vice versa
-			//no break; want to fall through to promptOptions
-		case "oneGuesser":
-		case "promptOptions":
-		case "promptMasks":
-			$(`#${setting}`)[0].checked = value;
-			break;
-		case "rounds":
-		case "timerTime":
-			$(`#${setting}`)[0].value = value;
-			break;
-	}
-}
-
-function emojiSearchChange(message) {
-	if ($("#fastSearch")[0].checked) {
-		emojiSearch(false);
-	} else {
-		$("#emojiSearchButton")[0].disabled = (message.length == 0);
-	}
-}
-
-function emojiSearch(clearInput) {
-	let textbox = $("#emojiSearchBox")[0];
-	let query = textbox.value;
-	
-	var codes = getMatchingEmojis(query);
-	populateEmojis(codes);
-	
-	if (clearInput) {
-		textbox.value = "";
-	}	
-}
-
-function populateEmojis(codes) {
-	var panel = $("#emojiPanel")[0]
-	panel.innerHTML = "";
-	
-	if (codes.length == 0) {
-		let para = document.createElement("P");
-		para.classList.add("bold");
-		let t = document.createTextNode("No matching emojis");
-		para.appendChild(t);
-		$("#emojiPanel")[0].appendChild(para);
-	} else {
-		for (var code of codes) {
-			panel.appendChild(createEmojiImage(code));
-		}
-	}
-}
-
-function createEmojiImage(code) {
-	let emojiImage = document.createElement("img");
-	if (localMode) {
-		emojiImage.src = `emojis/images/${code}.png`;
-	} else {
-		emojiImage.src = `https://openmoji.org/data/color/svg/${code}.svg`;
-	}
-	emojiImage.alt = emojis[code].name;
-	emojiImage.title = emojis[code].name;
-	emojiImage.dataset.code = code;
-	emojiImage.onmousedown = () => false; //stop the emoji images from 'stealing' focus from the search box
-	return emojiImage;
-}
-
-function addEmoji(event) {
-	let code = event.target.dataset.code;
-	if (code != undefined) {
-		$("#emojiClueHolder")[0].appendChild(createEmojiImage(code));
-	}
-}
-
-function undoClue() {
-	var cluePreview = $("#emojiClueHolder")[0];
-	if (cluePreview.childElementCount > 0) {
-		cluePreview.removeChild(cluePreview.lastChild);
-	}
-}
-
-function clearClue() {
-	$("#emojiClueHolder")[0].innerHTML = "";
-}
-
-function attemptSendClue() {
-	var emojiCodes = [];
-	for (var emoji of $("#emojiClueHolder img")) {
-		emojiCodes.push(emoji.dataset.code);
-	}
-	if (webSocket != undefined && webSocket.readyState == 1) {
-		
-		addButtonFeedback("#clueSendButton", "orange", "Sending...", true);
-		
-		send({
-			type: "sendClue",
-			clue: emojiCodes
-		});
-	}
-	clearClue();
-}
-
-function showEmojiClue(emojiCodes) {
-	var box = $("#emojiClues")[0];
-	var shouldScroll = !(hasVerticalScrollBar(box) && (getScrollPercentage(box) < 95)); //only if there is a scroll bar and you are at least partially scrolled up should it not scroll down
-	
-	var row = document.createElement("div");
-	for (var code of emojiCodes) {
-		row.appendChild(createEmojiImage(code));
-	}
-	box.appendChild(row);
-	resetElement("#clueSendButton");
-	
-	if (shouldScroll) {
-		scrollElement(box);
-	}
-}
-
-function toggleFastSearch() {
-	$("#emojiSearchButton")[0].disabled = true;
-}
-
-function beginGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, lobbyCode, maxRounds) {
-	lastRound = 0;
-	resetElement("#guessesPanel");
-	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds);
-	document.title = `${config.nameOfGame} - ${lobbyCode}`;
-	navigateTo("gamePage");
-}
-
-function continueGame(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds) {
-	resetElement("#guessInput");
-	$("#guessInput")[0].oninput("");
-	showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds);
-}
-
-function endGame(youAreDescriber, otherPlayers, round, describer, you, lobbyCode, maxRounds, settings) {
-	refreshClueColumn(false, true, round, undefined, undefined, undefined, undefined, maxRounds); //just want an empty column here
-	refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber);
-	showGameMessage("Game has ended");
-	showWinners(otherPlayers, describer, you, youAreDescriber);
-	showGameMessage("Returning to lobby in 10 seconds");
-	/*
-	A little complex here
-	moveToLobby wants an array of usernames of otherPlayers and you, but we have an array of objects
-	Similarly, it wants you to be your username, not an object with your username and score
-	Additionally, we have describer here as a separate entity, so we need to merge it with otherPlayers if it is another player (i.e. not you)
-	*/
-	if (describer && !youAreDescriber) { //if the describer is still in the game and it is not you
-		otherPlayers.push(describer); //add it to the list of other players
-	}
-	setTimeout(() => moveToLobby(lobbyCode, settings, otherPlayers.map(x => x.username), you.username), 10000);
-}
-
-function showWinners(otherPlayers, describer, you, youAreDescriber) {
-	//allplayers is comprised of you, the describer, and all other players
-	//note that the describer may be you however, so be careful not to double up
-	
-	//what is the highest score?
-	let maxScore = 0;
-	if (you.score > maxScore) {
-		maxScore = you.score;
-	}
-	if (!youAreDescriber && describer?.score > maxScore) {
-		maxScore = you.score;
-	}
-	for (let otherPlayer of otherPlayers) {
-		if (otherPlayer.score > maxScore) {
-			maxScore = otherPlayer.score;
-		}
-	}
-	
-	//who had the highest score?
-	let winners = [];
-	if (you.score == maxScore) {
-		winners.push(you.username);
-	}
-	if (!youAreDescriber && describer?.score == maxScore) {
-		winners.push(describer.username);
-	}
-	for (let otherPlayer of otherPlayers) {
-		if (otherPlayer.score == maxScore) {
-			winners.push(otherPlayer.username);
-		}
-	}
-
-	//display the winners
-	if (winners.length == 1) {
-		showGameMessage(`The winner is ${winners[0]}`);
-	} else {
-		let string = `The winners are ${winners[0]}`;
-		let count = winners.length;
-		for (var i = 1; i < count-1; i++) {
-			string += `, ${winners[i]}`
-		}
-		string += ` and ${winners[count-1]}`;
-		showGameMessage(string);
-	}
-}
-
-function showGameData(waitingForSelection, youAreDescriber, otherPlayers, round, describer, promptOptions, prompt, category, promptMask, you, maxRounds) {
-	refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber);
-	refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptMask, promptOptions, maxRounds);
-	showGameProgress(round, waitingForSelection, describer.username, category);
-}
-
-function refreshPlayersColumn(otherPlayers, describer, you, youAreDescriber) {
-	var box = $("#gamePlayerList")[0];
-	box.innerHTML = "";
-
-	//add you
-	let para = document.createElement("P");
-	let t = document.createTextNode(`[${you.score}] ${you.username} (You)${youAreDescriber ? " ✎" : ""}`);
-	para.appendChild(t);
-	box.appendChild(para);
-
-	//add describer separately if there is one and it isn't you (in which case you will already have the pencil from above)
-	if (describer && !youAreDescriber) {
-		para = document.createElement("P");
-		t = document.createTextNode(`[${describer.score}] ${describer.username} ✎`);
-		para.appendChild(t);
-		box.appendChild(para);
-	}
-
-	//add others
-	for (let otherPlayer of otherPlayers) {
-		let para = document.createElement("P");
-		let t = document.createTextNode(`[${otherPlayer.score}] ${otherPlayer.username}`);
-		para.appendChild(t);
-		box.appendChild(para);
-	}
-}
-
-function refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptMask, promptOptions, maxRounds) {
-	//prompt will be undefined if the player is not describer
-	//promptOptions will also be undefined if there are no options to be shown
-	resetElement("#emojiClues");
-	resetElement("#clueInput");
-
-	$("#promptSelectionPanel").hide();
-	if (waitingForSelection) {
-		if (youAreDescriber) {
-			$("#topicHolder")[0].innerHTML = `Round ${round} of ${maxRounds}`;
-			
-			populatePromptSelectionPanel(promptOptions);
-			$("#promptSelectionPanel").show();
-			$("#clueInput").hide();
-			$("#guessInputPanel").hide();
-		} else {
-			$("#topicHolder")[0].innerHTML = `Round ${round} of ${maxRounds}`;
-			
-			$("#promptSelectionPanel").hide();
-			$("#clueInput").hide();
-			
-			//showing the input panel scrolls the messages up a bit
-			//remember whether the div was scrolled fully before; if it was, scroll it again after showing the panel
-			let box = $("#guessesPanel")[0];
-			let shouldScroll = isFullyScrolled(box);
-			$("#guessInputPanel").show();
-			if (shouldScroll) {
-				scrollElement(box);
-			}
-		}
-	} else {
-		if (youAreDescriber) {
-			$("#topicHolder")[0].innerHTML = `Round ${round} of ${maxRounds}: Describe '${prompt}'`;
-			clearClue();
-			populateEmojis(getRandomEmojis());
-			$("#clueInput").show();
-			$("#guessInputPanel").hide();
-		} else {
-			$("#topicHolder")[0].innerHTML = `Round ${round} of ${maxRounds} | ${category}` + (promptMask ? ` | ${promptMask}` : "");
-			$("#clueInput").hide();
-			
-			//showing the input panel scrolls the messages up a bit
-			//remember whether the div was scrolled fully before; if it was, scroll it again after showing the panel
-			let box = $("#guessesPanel")[0];
-			let shouldScroll = isFullyScrolled(box);
-			$("#guessInputPanel").show();
-			if (shouldScroll) {
-				scrollElement(box);
-			}
-		}
-	}
-	
-}
-
-function showGameProgress(round, waitingForSelection, describerName, category) {
-	if (round > lastRound) {
-		showGameMessage(`Round ${round}`);
-		lastRound = round;
-	}
-	showGameMessage(`${describerName} is describing`);
-	if (waitingForSelection) {
-		showGameMessage(`${describerName} is choosing a prompt`);
-	} else {
-		showGameMessage(`The category is: ${category}`);
-	}
-	
-	scrollElement($("#guessesPanel")[0]);
-}
-
-function populatePromptSelectionPanel(promptOptions) {
-	resetElement("#promptSelectionPanel");
-	for (let i = 0; i < 3; i++) {
-		$(`#promptOption${i+1} .promptOptionCategory`)[0].innerHTML = promptOptions[i].category; //html holders are 1-based, promptOptions is 0-based
-		$(`#promptOption${i+1} .promptOption`)[0].innerHTML = promptOptions[i].prompt;
-	}
-}
-
-function attemptSelectPrompt(selection) {
-	if (webSocket != undefined && webSocket.readyState == 1) {	
-		send({
-			type: "selectPrompt",
-			promptNumber: selection
-		});
-		
-		var indicator = $("#promptSelectionStatus")[0]
-		indicator.innerHTML = "Choosing...";
-		indicator.classList.add("orange");
-	}
-}
-
-function processPromptSelected(youAreDescriber, category, prompt, promptMask, you, round, describerName, maxRounds) {
-	let waitingForSelection = false; //no longer waiting; it has been chosen
-	refreshClueColumn(youAreDescriber, waitingForSelection, round, prompt, category, promptMask, undefined, maxRounds); //pass promptOptions as undefined as there will be none given that a prompt was just chosen
-	showGameMessage(`${describerName} has chosen a '${category}'`);1
-}
-
-function guessChange(guess) {
-	$("#sendGuessButton")[0].disabled = (guess.length == 0);
-}
-
-function attemptSendGuess() {
-	if (webSocket != undefined && webSocket.readyState == 1) {	
-		guessInput = $("#guessInput")[0];
-		var text = guessInput.value
-		send({
-			type: "sendGuess",
-			guess: text
-		});
-		guessInput.value = "";
-		guessInput.oninput("");
-	}
-}
-
-function showGuess(guesser, isGuesser, guess) {
-	showGameMessage(`${guesser}${isGuesser ? " (You)" : ""}: ${guess}`);
-}
-
-function showGameMessage(string) {
-	//before we add the new guess, we should check whether they are fully scrolled
-	var box = $("#guessesPanel")[0];
-	var shouldScroll = isFullyScrolled(box); //only if there is a scroll bar and you are at least partially scrolled up should it not scroll down
-		
-	let para = document.createElement("P");
-	let t = document.createTextNode(string);
-	para.appendChild(t);
-	$("#guessesPanel")[0].appendChild(para);
-	
-	if (shouldScroll) {
-		scrollElement(box);
-	}
-}
-
-function copyDirectJoinURLToClipboard() {
-	var url = $("#directJoinURLHolder")[0];
-	url.select();
-	url.setSelectionRange(0, 99999);
-	document.execCommand("copy");
-	addButtonFeedback("#copyURLButton", "orange", "Copied!", false);
-	setTimeout(() => resetElement("#copyURLButton"), 1000);
-}
+document.addEventListener('alpine:init', () => {
+    window.addEventListener("send", (event) => {
+        Alpine.store('connection').send(event.detail);
+    });
+
+    window.addEventListener("navigateto", (event) => {
+        Alpine.store('pages').navigateTo(event.detail);
+    })
+
+    Alpine.store('pages', {
+        init() {
+            this.list = $("[data-page]").toArray().map(x => x.dataset.page);
+            if (/^\?directJoin=[A-Z]{5}$/.test(window.location.search)) {
+                this.navigateTo("directJoin");
+            } else {
+                this.navigateTo(config.landingPage);
+            }
+        },
+        list: [],
+        currentPage: "",
+        navigateTo(page) {
+            this.currentPage = page;
+        }
+    })
+
+    Alpine.store('connection', {
+        webSocket: undefined,
+        attemptConnection(username, code = undefined) {
+            if (this.webSocket == undefined || this.webSocket.readyState == WebSocket.CLOSED) {
+                this.webSocket = new WebSocket(`${config.socketURL}?username=${username}`);
+                this.webSocket.onopen = function(event) {
+                    window.dispatchEvent(new CustomEvent("connected"));
+                    if (code && /^[A-Z]{5}$/.test(code)) { //if a code was given, and it is valid
+                        window.dispatchEvent(new CustomEvent("send", {detail: {type: 'joinLobby', lobbyCode: code}}));
+                    } else { //if not direct joining
+                        window.dispatchEvent(new CustomEvent("navigateto", {detail: "home"}));
+                    }
+                }
+                this.webSocket.onclose = function(event) {
+                    window.dispatchEvent(new CustomEvent("disconnected"));
+                    window.dispatchEvent(new CustomEvent("navigateto", {detail: "landing"}));
+                }
+                this.webSocket.onmessage = function(event) {
+                    console.log(event);
+                    message = JSON.parse(event.data);
+                    window.dispatchEvent(new CustomEvent(message.type.toLowerCase(), {detail: message}));
+                }
+            }
+        },
+        send(params) {
+            if (this.webSocket?.readyState == WebSocket.OPEN) {
+                params.action = "onMessage";
+                console.log(params);
+		        this.webSocket.send(JSON.stringify(params));
+            }
+        }
+    });
+
+    Alpine.data('login', (code = undefined) => ({
+        username: "",
+        loggingIn: false,
+        validUsername() {
+            return config.usernameFormat.test(this.username);
+        },
+        login() {
+            if (this.validUsername() && !this.loggingIn) {
+                this.$store.connection.attemptConnection(this.username, code);
+                this.loggingIn = true;
+            }
+        }
+    }));
+
+    Alpine.data('chatWindow', () => ({
+        messages: [],
+        scrollIfScrolled(el) {
+            if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
+                this.$nextTick(() => {el.scrollTop = el.scrollHeight})
+            }
+        }
+    }));
+
+    Alpine.data('chatSend', (type) => ({
+        message: "",
+        send() {
+            if (this.validMessage()) {
+                this.$dispatch('send', {type: type, message: this.message});
+                this.message = '';
+            }
+        },
+        validMessage() {
+            return this.message.length > 0;
+        }
+    }));
+
+    Alpine.data('joinLobby', () => ({
+        code: "",
+        joining: false,
+        join() {
+            if (/^[A-Z]{5}$/.test(this.code)) {
+                this.joining = true;
+                this.$dispatch('send', {type: 'joinLobby', lobbyCode: this.code});
+            }
+        },
+        notFound() {
+            alert("Lobby not found!");
+            this.joining = false;
+        },
+        invalidCode() {
+            alert("Invalid code");
+            this.joining = false;
+        }
+    }));
+
+    Alpine.data('settings', () => ({
+        mode: "",
+        promptMasks: false,
+        promptOptions: false,
+        rounds: 0,
+        timer: false,
+        timerTime: 0,
+        changeSetting(id, value) {
+            this.$dispatch('send', {type: 'changeSetting', setting: id, newValue: value})
+        },
+        settingsChanged(settings) {
+            Object.keys(settings).forEach((id) => {
+                this.settingChanged(id, settings[id]);
+            })
+        },
+        settingChanged(id, value) {
+            this[id] = value;
+        }
+    }));
+
+    Alpine.data('game', () => ({
+        waitingForSelection: false,
+        youAreDescriber: true,
+        otherPlayers: [],
+        round: 0,
+        newRound: false,
+        describer: {},
+        promptOptions: [],
+        prompt: "",
+        category: "",
+        promptMask: "",
+        you: {},
+        maxRounds: 0,
+        timeTurnEnding: 0,
+        updateState(detail) {
+            Object.keys(detail).forEach((key) => {
+                this[key] = detail[key];
+            })
+        }
+    }));
+
+    Alpine.data('timer', () => ({
+        timeRemaining: 0,
+        active: false,
+        timerInterval: 0,
+        startTimer(endTime) {
+            clearInterval(this.timerInterval); //clear the last timer
+            if (!endTime) { //if undefined
+                this.active = false;
+                return; //don't need to do anything
+            }
+            this.active = true;
+            this.timeRemaining = this.secondsRemaining(endTime);
+            this.timerInterval = setInterval(() => {
+                let secondsRemainig = this.secondsRemaining(endTime);
+                if (secondsRemainig >= 0) {
+                    this.timeRemaining = secondsRemainig;
+                } else {
+                    clearInterval(this.timerInterval);
+                }
+            }, 1000);
+        },
+        secondsRemaining(endTime) {
+            return Math.round((endTime - Date.now())/1000);
+        }
+    }));
+
+    Alpine.data('guesses', () => ({
+        messages: [],
+        showGuess(detail) {
+            this.showMessage(`${detail.guesser}${detail.isGuesser ? ' (You)' : ''}: ${detail.guess}`, false);
+        },
+        showCorrectGuess(detail) {
+            this.showMessage(`${detail.guesser} has guessed correctly! The prompt was '${detail.prompt}'`, true);
+        },
+        showTimeout(detail) {
+            this.showMessage(detail.prompt ? `Times up! The prompt was '${detail.prompt}'` : "Times up!", true);
+        },
+        showBegin(detail) {
+            this.messages = [];
+            this.showProgress(detail);
+        },
+        showProgress(detail) {
+            if (detail.newRound) {
+                this.showMessage(`Round ${detail.round}`, true);
+            }
+            this.showMessage(`${detail.describer.username} is describing`, true);
+            if (detail.waitingForSelection) {
+                this.showMessage(`${detail.describer.username} is choosing a prompt`, true);
+            } else {
+                this.showMessage(`The category is: ${category}`);
+            }
+        },
+        showSelected(detail) {
+            this.showMessage(`${detail.describerName} has chosen a ${detail.category}`, true);
+        },
+        showEnded(detail) {
+            this.showMessage("The game has finished", true);
+            this.showMessage(`The ${detail.winners.length > 1 ? "winners are" : "winner is"} ${detail.winners.toString().replace(/,(?!.*,.*)/, " and ").replace(",", ", ")}`, true); //["Player"] => "The winner is Player", ["Player", "Gamer"] => "The winners are Player and Gamer", ["Player", "Gamer", "Participant"] => "The winners are Player, Gamer and Participant"
+	        this.showMessage(`Returning to the lobby in ${this.$store.config.postGameLingerTime} seconds`);
+        },
+        showMessage(message, shouldScroll) {
+            this.messages.push(message);
+            if (shouldScroll || (this.$refs.guesses.scrollTop + this.$refs.guesses.clientHeight >= this.$refs.guesses.scrollHeight)) { //if the guess column is scrolled, or this message should force a scroll
+                this.$nextTick(() => {this.$refs.guesses.scrollTop = this.$refs.guesses.scrollHeight})
+            }
+        }
+    }));
+});

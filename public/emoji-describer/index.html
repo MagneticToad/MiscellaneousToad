@@ -1,220 +1,332 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Emoji Describer</title>
+	<title x-data="{title: $store.config.nameOfGame}" @movetolobby.window="title = `${$store.config.nameOfGame} - ${$event.detail.lobbyCode}`" x-text="title">Emoji Describer</title>
 	<link rel="icon" href="https://openmoji.org/data/color/svg/1F63C.svg">
 	<script src="script.js"></script>
 	<script src="config.js"></script>
-	<script src="emojis/emojis.js"></script>
+	<script src="emojis.js"></script>
 	<script src="jquery-3.6.0.min.js"></script>
-	<link rel="stylesheet" href="styles.css">
+	<script defer src="alpine-3.10.5.min.js"></script>
+	<link rel="stylesheet" href="output.css">
 </head>
-<body onload="initPageManagement()">
-	<div id="pageView">
-		<div id="navigationPane">
-			<div id="customHeader">
-				<p>Navigate through pages here</p>
-				<button type="button" onclick="toggleLocalMode()" id="toggleModeButton">Local mode</button>
-			</div>
-		</div>
-		<div class="page" id="landingPage">
-			<p class="connectionStatus bold red">Not connected</p>
-			<p>Username:</p>
-			<input type="text" id="username" oninput="usernameChange(this.value)" maxlength="15" autocomplete="off"></input>
-			<br>
-			<br>
-			<button type="button" id="connectButton" onclick="attemptConnect()" disabled>Connect</button>
-			<p>All emojis designed by <a href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
-		</div>
-		<div class="page" id="homePage">
-			<br>
-			<hr>
-			<p class="connectionStatus bold red">Not connected</p>
-			<button type="button" id="disconnectButton" onclick="attemptDisconnect()" disabled>Disconnect</button>
-			<hr>
-			<h1>Lobby manager</h1>
-			<button type="button" id="createGame" onclick="attemptCreateNewGame()" class="resettable">Create new game</button>
-			<br>
-			<input type="text" id="lobbyCode" oninput="lobbyCodeChange(this.value)" maxlength="5" placeholder="Enter code here" class="resettable"></input>
-			<button type="button" id="joinGame" onclick="attemptJoinGame()" class="resettable" disabled>Join game</button>
-			<hr>
-			<h1>Global chat room</h1>
-			<br>
-			<div id="globalMessages">
-			</div>
-			<br>
-			<input type="text" oninput="globalMessageChange(this.value)" id="globalMessage" disabled></input>
-			<button id="globalSendButton" type="button" onclick="globalSend()" disabled>Send</button>
-		</div>
-		<div class="page" id="lobbyPage">
-			<div id="joinInfoHolder">
-				<h1 id="displayLobbyCode">Code goes here</h1>
-				<p>or with url</p>
-				<input id="directJoinURLHolder" readonly></input>
-				<button type="button" id="copyURLButton" onclick="copyDirectJoinURLToClipboard()" class="resettable">Copy</button>
-			</div>
-			<div id="lobbyPlayerBox" class="boxed">
-				<p class="bold">Players</p>
-				<hr>
-				<div id="lobbyPlayerList">
+<body>
+	<div class="h-screen max-h-screen bg-green-300 flex flex-col">
+		<template x-if="$store.config.devMode" x-data="$store.pages">
+			<div class="border-2 border-solid border-black border-b p-2">
+				<div class="flex justify-between" x-data="$store.config">
+					<p>Navigate through pages here</p>
+					<button class="bg-stone-300 border border-black rounded-lg p-1" type="button" @click="localMode = !localMode" x-text="localMode ? 'Local mode' : 'Online mode'"></button>
+				</div>
+				<div class="flex gap-2">
+					<template x-for="page in list">
+						<button @click="$dispatch('navigateto', page)" x-text="page" class="bg-stone-300 border border-black rounded-lg p-0.5"></button>
+					</template>
 				</div>
 			</div>
-			<br>
-			<div id="lobbySettings" class="boxed">
-				<p class="bold">Match Settings</p>
-				<div id="settingsRow1">
-					<div id="ffaSettings">
-						<input type="radio" id="FFA" name="mode" value="FFA" onclick="attemptChangeSetting(this.id)" checked>
-						<label for="FFA">Free-for-All</label><br>
-						<div class="subSettings">
-							<input type="checkbox" id="oneGuesser" name="oneGuesser" onclick="attemptChangeSetting(this.id)" checked>
-							<label for="oneGuesser" title="Only the first person to guess the prompt gets points; after that, the round ends">One Guesser</label><br>
-							<input type="checkbox" id="timer" name="timer" onclick="attemptChangeSetting(this.id)">
-							<label for="timer">Timer</label>
-							<select name="timerTime" id="timerTime" onchange="attemptChangeSetting(this.id)">
-								<option value="30">30</option>
-								<option value="45">45</option>
-								<option value="60">60</option>
-								<option value="75">75</option>
-								<option value="90">90</option>
-								<option value="120" selected>120</option>
-								<option value="150">150</option>
-								<option value="180">180</option>
-								<option value="240">240</option>
-								<option value="300">300</option>
-							</select><br>
-							<input type="checkbox" id="promptOptions" name="promptOptions" onclick="attemptChangeSetting(this.id)">
-							<label for="promptOptions">Prompt Options</label><br>
-							<input type="checkbox" id="promptMasks" name="promptMasks" onclick="attemptChangeSetting(this.id)">
-							<label for="promptMasks">Prompt Masks</label><br>
+		</template>
+		<div class="flex flex-col justify-center items-center bg-yellow-300 grow overflow-hidden">
+			<div data-page="landing" class="border border-black flex flex-col justify-between items-center gap-12 py-6 px-10 bg-orange-300" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="login" @connected.window="loggingIn = false">
+				<div class="flex flex-col justify-center items-center gap-4">
+					<input class="border border-black" type="text" autocomplete="off" placeholder="Enter a name..." @keyup.enter="login()" @input="username = username.replace(/[^A-Za-z0-9 ]/g, '').replace(/^ /, '').replace(/(?<=.{15}).$/g, '')" x-model="username"></input>
+					<button class="bg-stone-300 border border-black rounded-lg p-0.5 px-3 disabled:opacity-50" :class="{'text-orange-500': loggingIn}" type="button" :disabled="!validUsername() || loggingIn" @click="login()" x-text="loggingIn ? 'Connecting...' : 'Play'"></button>
+				</div>
+				<p>All emojis designed by <a class="underline text-blue-500" href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a class="underline text-blue-500" href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
+			</div>
+			<div data-page="home" class="grid grid-cols-5 grid-rows-2 border border-black bg-blue-300 h-4/6 w-5/12" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" @leavelobby.window="$dispatch('navigateto', $el.dataset.page)" @lobbydeleted.window="$dispatch('navigateto', $el.dataset.page); alert('The lobby you were in was deleted');" x-data>
+				<div class="col-span-2 row-span-1 bg-red-400 p-8 flex items-center justify-center grow" x-data="{creating: false}" @movetolobby.window="creating = false">
+					<button class="border border-black rounded-lg p-1 transition hover:rotate-6 hover:ease-in hover:duration-75" :class="{'text-orange-500': creating}" type="button" @click="$dispatch('send', {type: 'createLobby'}); creating = true;" x-text="creating ? 'Creating...' : 'Create new game'"></button>
+				</div>
+				<div class="col-start-1 col-span-2 row-start-2 row-end-2 flex flex-col gap-2 bg-teal-400 p-8 grow items-center justify-center" x-data="joinLobby" @movetolobby.window="joining = false" @lobbynotfound.window="notFound()" @invalidlobbycode.window="invalidCode()">
+					<input type="text" placeholder="Enter code here" @input="code = code.replace(/[^A-Za-z]/g, '').replace(/(?<=.{5}).$/g, '').toUpperCase()" @keyup.enter="join()" x-model="code"></input>
+					<button class="border border-black rounded-lg p-1 transition enabled:hover:rotate-6 enabled:hover:ease-in enabled:hover:duration-75 disabled:opacity-50" :class="{'text-orange-500': joining}" @click="join()" type="button" :disabled="!/^[A-Z]{5}$/.test(code)" x-text="joining ? 'Joining...' : 'Join game'"></button>
+				</div>
+				<div class="col-start-3 col-span-3 row-start-1 row-span-2 flex flex-col justify-between items-center p-4 gap-2">
+					<h1>Global chat</h1>
+					<div class="flex flex-col grow bg-white w-full h-full overflow-y-auto break-words" @globalchatmessage.window="messages.push($event.detail); scrollIfScrolled($el);" x-data="chatWindow">
+						<template x-for="m in messages">
+							<span x-text="`${m.sender}${m.isSender ? ' (You)' : ''}: ${m.message}`"></span>
+						</template>
+					</div>	
+					<div class="flex gap-2" x-data="chatSend('globalChatMessage')">
+						<input type="text" x-model="message" @keyup.enter="send()"></input>
+						<button class="border border-black rounded-lg p-1" type="button" @click="send()" :disabled="!validMessage()">Send</button>
+					</div>
+				</div>
+			</div>
+			<div data-page="lobby" class="flex flex-col border border-black bg-rose-400 justify-between gap-4 h-4/6 w-5/12 overflow-hidden" x-cloak x-show="$store.pages.currentPage == $el.dataset.page"  x-data="{others: [], refresh(list) {this.others = list}}" @movetolobby.window="$dispatch('navigateto', $el.dataset.page)" @gameended.window="setTimeout(() => $dispatch('movetolobby', $event.detail), 1000*$store.config.postGameLingerTime)">
+				<div class="bg-slate-300 flex items-center justify-center gap-6" x-data="{lobbyCode: ''}" @movetolobby.window="lobbyCode = $event.detail.lobbyCode">
+					<div>
+						<span>Lobby code: </span>
+						<span class="font-bold" x-text="lobbyCode"></span>
+					</div>
+					<button class="border border-black rounded-lg p-1" :class="{'text-green-500': copied}" type="button" x-data="{copied: false}" @click="navigator.clipboard.writeText(`${window.location.href.replace(/\?.*$/, '')}?directJoin=${lobbyCode}`); copied = true; setTimeout(() => copied = false, 750)" x-text="copied ? 'Copied!' : 'Invite 🔗'"></button>
+				</div>
+				<div class="bg-orange-200 grow grid grid-cols-5 grid-rows-2 gap-2 overflow-hidden">
+					<div class="col-span-2 row-span-1 bg-gray-200 overflow-auto">
+						<div class="flex flex-col gap-1"> <!-- <div class="flex flex-wrap gap-2"> may be more desirable -->
+							<div class="text-blue-500 font-medium" x-data="{you: ''}" @movetolobby.window="you = $event.detail.you">
+								<span x-text="you"></span>
+								<span> (you)</span>
+							</div>
+							<template x-for="(other, index) in others" @movetolobby.window="refresh($event.detail.otherPlayers)" @playerjoinedlobby.window="refresh($event.detail.otherPlayers)" @playerleftlobby.window="refresh($event.detail.newOtherPlayers)">
+								<div class="font-medium" :class="$store.config.lobbyPlayerColours[index%$store.config.lobbyPlayerColours.length]" x-text="other"></div>
+							</template>
 						</div>
 					</div>
-					<div id="teamsSettings">
-						<input type="radio" id="teams" name="mode" value="teams" onclick="attemptChangeSetting(this.id)">
-						<label for="teams">Teams</label>
-						<div class="subSettings">
-							<input type="radio" id="fastest" name="teamsBasis" value="fastest" checked>
-							<label for="fastest">Fastest</label>
-							<input type="radio" id="fewestEmojis" name="teamsBasis" value="fewestEmojis" checked>
-							<label for="fewestEmojis">Fewest Emojis</label><br>
-						</div>
-					</div>
-				</div>
-				<div id="settingsRow2">
-					<label for="rounds">Rounds:</label>
-					<select name="rounds" id="rounds" onchange="attemptChangeSetting(this.id)">
-						<option value="1">1</option>
-						<option value="2">2</option>
-						<option value="3">3</option>
-						<option value="4">4</option>
-						<option value="5">5</option>
-						<option value="6">6</option>
-						<option value="7">7</option>
-						<option value="8">8</option>
-						<option value="9">9</option>
-						<option value="10">10</option>
-					</select>
-				</div>
-			</div>
-			<br>
-			<hr>
-			<h1>Lobby chat room</h1>
-			<br>
-			<div id="lobbyMessages" class="resettable">
-			</div>
-			<br>
-			<input type="text" oninput="lobbyMessageChange(this.value)" id="lobbyMessage"></input>
-			<button id="lobbySendButton" type="button" onclick="lobbySend()" disabled>Send</button>
-			<br>
-			<br>
-			<button type="button" id="startGame" onclick="attemptStartGame()" class="resettable" disabled>Start</button>
-			<button type="button" id="leaveGame" onclick="attemptLeaveGame()" class="resettable">Leave</button>
-		</div>
-		<div class="page" id="gamePage">
-			<div id="gameDiv">
-				<div class="boxed gameColumn" id="playersColumn">
-					<div class="columnHeader">
-						<p class="bold">Players</p>
-					</div>
-					<div id="gamePlayerList">
-					<p>SamplePlayer1 ✎</p>
-					<p>SamplePlayer2</p>
-					</div>
-				</div>
-				<div class="boxed gameColumn centered" id="emojisColumn">
-					<div class="columnHeader">
-						<p class="bold" id="topicHolder">SampleTopic</p>
-					</div>
-					<div id="cluePanel">
-						<!--Prompt selection is shown inside the cluePanel but is not visible most of the time -->
-						<div id="promptSelectionPanel" class="boxed resettable">
-							<h3 id="promptSelectionStatus">Choose a prompt:</h3>
-							<div id="promptOptionsHolder">
-								<div id="promptOption1" class="promptOption boxed" onclick="attemptSelectPrompt(1)">
-									<span class="promptOptionCategory bold">Video Game</span>
-									<span class="promptOption">Minecraft</span>
+					<div class="col-start-1 col-span-2 row-start-2 row-span-1 flex flex-col bg-slate-500 gap-4"  x-data="settings" @movetolobby.window="settingsChanged($event.detail.settings)" @settingchanged.window="settingChanged($event.detail.setting, $event.detail.newValue)">
+						<div class="flex">
+							<div class="flex flex-col">
+								<div class="border-b border-black">
+									<label title="The only mode, currently">
+										<input type="radio" name="mode" :checked="mode == 'FFA'">
+										Free-for-All
+									</label>
 								</div>
-								<div id="promptOption2" class="promptOption boxed" onclick="attemptSelectPrompt(2)">
-									<span class="promptOptionCategory bold">Movie</span>
-									<span class="promptOption">The Hunger Games</span>
-								</div>
-								<div id="promptOption3" class="promptOption boxed" onclick="attemptSelectPrompt(3)">
-									<span class="promptOptionCategory bold">Person</span>
-									<span class="promptOption">Lil Pump</span>
+								<div class="flex flex-col">
+									<div>
+										<label title="The describer only has a limited amount of time to describe the prompt">
+											<input type="checkbox" @click="changeSetting('timer', !timer)" x-model="timer">
+											Timer
+										</label>
+										<select @change="changeSetting('timerTime', timerTime)" x-model.number="timerTime" :disabled="!timer">
+											<template x-for="time in $store.config.offeredTimerTimes">
+												<option :value="time" x-text="time"></option>
+											</template>
+										</select>
+									</div>
+									<label title="The describer can choose a prompt from a set of options">
+										<input type="checkbox" @click="changeSetting('promptOptions', !promptOptions)" x-model="promptOptions">
+										Prompt options
+									</label>
+									<label title="The guessers get the scaffold of the prompt e.g. '_ _ _   _ _ _ _ _   _ _ _ _ _ _">
+										<input type="checkbox" @click="changeSetting('promptMasks', !promptMasks)" x-model="promptMasks">
+										Prompt masks
+									</label>
 								</div>
 							</div>
-							<br>
-						</div>
-						<div id="emojiClues" class="resettable">
-						</div>
-						<div id="clueInput" class="resettable">
-							<div id="cluePreview">
-								<br>
-								<div id="emojiClueHolder" class="horizontalBoxed bold" data-placeholder="Click on emojis to add them to the clue here.&#xa;Click send when the clue is ready."></div>
-								<div id="cluePreviewButtons">
-									<button type="button" id="clueUndoButton" onclick="undoClue()">Undo</button>
-									<button type="button" id="clueClearButton" onclick="clearClue()">Clear</button>
-									<button type="button" id="clueSendButton" onclick="attemptSendClue()" class="resettable">Send</button>
+							<div class="flex flex-col">
+								<div class="border-b border-black">
+									<label title="Teams mode - coming soon?">
+										<input type="radio" name="mode" x-model="mode" disabled>
+										Teams
+									</label>
+								</div>
+								<div class="flex">
+									<label title="The winning team is the team that guesses the prompt the fastest">
+										<input type="radio" name="teamsBasis" disabled>
+										Fastest
+									</label>
+									<label title="The winning team is the team that guesses the prompt using the fewest emojis">
+										<input type="radio" name="teamsBasis" disabled>
+										Fewest emojis
+									</label>
 								</div>
 							</div>
-							<div id="emojiPanel" class="verticalBoxed" onclick="addEmoji(event)">
+						</div>
+						<div class="border-t border-black">
+							<label title="The number of rounds the game will last for, where each round consists of each player taking a turn as the describer">
+								Rounds
+								<select @change="changeSetting('rounds', rounds)" x-model.number	="rounds">
+									<template x-for="i in 10">
+										<option :value="i" x-text="i"></option>
+									</template>
+								</select>
+							</label>
+						</div>
+					</div>
+					<div class="col-start-3 col-span-3 row-start-1 row-span-2 flex flex-col justify-between p-4 bg-slate-700" x-data="{isLobby: true}">
+						<h1 class="self-center">Chat</h1>
+						<div class="flex self-start gap-0.5">
+							<button class="rounded-t-lg p-1" :class="isLobby ? 'bg-white' : 'bg-gray-300'" @click="isLobby = !isLobby" :disabled="isLobby">Lobby</button>
+							<button class="rounded-t-lg p-1" :class="!isLobby ? 'bg-white' : 'bg-gray-300'" @click="isLobby = !isLobby" :disabled="!isLobby">Global</button>
+						</div>
+						<div class="flex flex-col gap-2 grow overflow-hidden" x-show="isLobby">
+							<div class="flex flex-col bg-white h-full w-full overflow-y-auto break-words" @lobbychatmessage.window="messages.push($event.detail); scrollIfScrolled($el);" x-data="chatWindow">
+								<template x-for="m in messages">
+									<span x-text="`${m.sender}${m.isSender ? ' (You)' : ''}: ${m.message}`"></span>
+								</template>
+							</div>	
+							<div class="self-center flex gap-2" x-data="chatSend('lobbyChatMessage')">
+								<input type="text" x-model="message" @keyup.enter="send()"></input>
+								<button class="border border-black rounded-lg p-1" type="button" @click="send()" :disabled="!validMessage()">Send</button>
 							</div>
-							<input type="text" id="emojiSearchBox" oninput="emojiSearchChange(this.value)" placeholder="Search for emojis here"></input>
-							<button type="button" id="emojiSearchButton" onclick="emojiSearch(true)" disabled>Search</button>
-							<input type="checkbox" id="fastSearch" onclick="toggleFastSearch()">
+						</div>
+						<div class="flex flex-col gap-2 grow overflow-hidden" x-cloak x-show="!isLobby">
+							<div class="flex flex-col bg-white h-full w-full overflow-y-auto break-words" @globalchatmessage.window="messages.push($event.detail); scrollIfScrolled($el);" x-data="chatWindow">
+								<template x-for="m in messages">
+									<span x-text="`${m.sender}${m.isSender ? ' (You)' : ''}: ${m.message}`"></span>
+								</template>
+							</div>	
+							<div class="self-center flex gap-2" x-data="chatSend('globalChatMessage')">
+								<input type="text" x-model="message" @keyup.enter="send()"></input>
+								<button class="border border-black rounded-lg p-1" type="button" @click="send()" :disabled="!validMessage()">Send</button>
+							</div>
 						</div>
 					</div>
 				</div>
-				<div class="boxed gameColumn" id="gameChatColumn">
-					<div class="columnHeader">
-						<p class="bold">Chat & Guess</p>
+				<div class="bg-lime-300 flex items-center justify-center gap-6">
+					<button class="border border-black rounded-lg p-1" :class="{'text-orange-500': starting}" type="button" @click="$dispatch('send', {type: 'startGame'}); starting = true;" @begingame.window="starting = false" x-data="{starting: false}" :disabled="starting || others.length === 0" x-text="starting ? 'Starting...' : 'Start game'"></button>
+					<button class="border border-black rounded-lg p-1" :class="{'text-orange-500': leaving}" type="button" @click="$dispatch('send', {type: 'leaveLobby'}); leaving = true;" @leavelobby.window="leaving = false" x-data="{leaving: false}" :disabled="leaving" x-text="leaving ? 'Leaving...' : 'Leave'"></button>
+				</div>
+			</div>
+			<div data-page="directJoin" class="border border-black flex flex-col justify-between items-center gap-12 py-6 px-10 bg-orange-300" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="{code: ''}" x-init="code = window.location.search.substring(12)">
+				<div class="flex flex-col justify-center items-center gap-4" x-data="login(code)" @movetolobby.window="loggingIn = false">
+					<div class="font-bold">
+						<span>Join game </span>
+						<span x-text="code"></span>
 					</div>
-					<div id="guessPanel">
-						<div id="guessesPanel" class="resettable">
+					<input class="border border-black" type="text" autocomplete="off" placeholder="Enter a name..." @keyup.enter="login()" @input="username = username.replace(/[^A-Za-z0-9 ]/g, '').replace(/^ /, '').replace(/(?<=.{15}).$/g, '')" x-model="username"></input>
+					<button class="bg-stone-300 border border-black rounded-lg p-0.5 px-3 disabled:opacity-50" :class="{'text-orange-500': loggingIn}" type="button" :disabled="!validUsername() || loggingIn" @click="login()" x-text="loggingIn ? 'Joining...' : 'Join'"></button>
+				</div>
+				<p>All emojis designed by <a class="underline text-blue-500" href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a class="underline text-blue-500" href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
+			</div>
+			<div data-page="game" class="border border-black grid grid-cols-6 h-5/6 w-3/4 overflow-hidden" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="game" @begingame.window="updateState($event.detail); $dispatch('navigateto', $el.dataset.page);" @continuegame.window="updateState($event.detail)" @playerjoinedgame.window="updateState($event.detail)" @playerleftgame.window="updateState($event.detail)" @promptselected.window="updateState($event.detail); waitingForSelection = false;">
+				<div class="col-span-1 flex flex-col bg-lime-200 gap-2">
+					<span class="font-bold text-center border-b border-black">Players</span>
+					<div>
+						<div class="flex gap-1">
+							<div class="flex">
+								<span>[</span>
+								<span x-text="you?.score"></span>
+								<span>]</span>
+							</div>
+							<span x-text="you?.username"></span>
+							<span>(you)</span>
+							<span x-show="youAreDescriber">✎</span>
 						</div>
-						<div id="guessInputPanel">
-							<br>
-							<input type="text" id="guessInput" oninput="guessChange(this.value)" class="resettable"></input>
-							<button type="button" id="sendGuessButton" onclick="attemptSendGuess()">Guess</button>
+						<div class="flex gap-1" x-show="describer && !youAreDescriber">
+							<div class="flex">
+								<span>[</span>
+								<span x-text="describer?.score"></span>
+								<span>]</span>
+							</div>
+							<span x-text="describer?.username"></span>
+							<span>✎</span>
 						</div>
+						<template x-for="player in otherPlayers">
+							<div class="flex gap-1">
+								<div class="flex">
+									<span>[</span>
+									<span x-text="player.score"></span>
+									<span>]</span>
+								</div>
+								<span x-text="player.username"></span>
+							</div>
+						</template>
+					</div>
+				</div>
+				<div class="col-span-3 flex flex-col justify-start bg-lime-400 gap-2 border-x border-black overflow-hidden" @keyup.y.window="youAreDescriber = !youAreDescriber" @keyup.w.window="waitingForSelection = !waitingForSelection">
+					<div class="basis-auto flex justify-between border-b border-black shrink-0 bg-amber-200 font-bold">
+						<div class="flex gap-1 bg-fuchsia-200">
+							<div class="flex gap-1">
+								<span>Round</span>
+								<span x-text="round"></span>
+								<span>of</span>
+								<span x-text="maxRounds"></span>
+							</div>
+						</div>
+						<div class="flex gap-1 justify-center bg-fuchsia-400">
+							<div class="flex gap-1" x-show="waitingForSelection">
+								<span x-text="describer?.username"></span>
+								<span>is selecting a prompt</span>
+							</div>
+							<div x-show="!waitingForSelection">
+								<div class="flex gap-1" x-show="youAreDescriber">
+									<span>Describe</span>
+									<span x-text="prompt"></span>
+									<div class="flex">
+										<span>(</span>
+										<span x-text="category"></span>
+										<span>)</span>
+									</div>
+								</div>
+								<div class="flex gap-1" x-show="!youAreDescriber">
+									<span x-text="category"></span>
+									<div class="flex gap-1" x-show="promptMask">
+										<span>|</span>
+										<span x-text="promptMask"></span>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="bg-fuchsia-600">
+							<span class="text-red-500" x-data="timer" @begingame.window="startTimer($event.detail.timeTurnEnding)" @continueGame.window="startTimer($event.detail.timeTurnEnding)" x-text="timeRemaining" x-show="active"></span>
+						</div>
+					</div>
+					<div class="basis-auto flex flex-col items-center gap-2 bg-pink-300" x-show="youAreDescriber && waitingForSelection" x-data="{selecting: false}" @prompselected.window="selected = false">
+						<span class="font-bold" :class="{'text-orange-500': selecting}" x-text="selecting ? 'Selecting...' : 'Choose a prompt'"></span>
+						<div class="flex justify-around gap-2 w-full">
+							<template x-for="(option, index) in promptOptions">
+								<div class="flex flex-col border items-center border-black p-2 hover:cursor-pointer hover:bg-slate-400" @click="$dispatch('send', {type: 'selectPrompt', promptNumber: index + 1}); selecting = true" :disable="selecting">
+									<span class="font-bold" x-text="option.category"></span>
+									<span x-text="option.prompt"></span>
+								</div>
+							</template>
+						</div>
+					</div>
+					<div class="basis-19 grow flex flex-col items-center bg-yellow-300 max-h-full overflow-y-auto" x-data="{clues: []}" @incomingclue.window="clues.push($event.detail.clue); $nextTick(() => {$el.scrollTop = $el.scrollHeight});" @begingame.window="clues = []" @continuegame.window="clues = []">
+						<template x-for="clue in clues" @keydown.2.window="clues.pop()">
+							<div class="flex">
+								<template x-for="code in clue">
+									<img class="w-18 h-18" :src="$store.config.localMode ? `../emojis/images/${code}.png` : `https://openmoji.org/data/color/svg/${code}.svg`" :alt="emojis[code].name", :title="emojis[code].name">
+								</template>
+							</div>
+						</template>
+					</div>
+					<div class="basis-auto flex flex-col items-center justify-end w-full bg-blue-300 overflow-hidden" x-show="youAreDescriber && !waitingForSelection" x-data="{query: '', searchResults: [], clue: [], search() {this.searchResults = getMatchingEmojis(this.query); if (!this.fastSearch) this.query = '';}, fastSearch: false}" @begingame.window="if ($event.detail.youAreDescriber && !$event.detail.waitingForSelection) searchResults = getRandomEmojis()" @continuegame.window="if ($event.detail.youAreDescriber && !$event.detail.waitingForSelection) searchResults = getRandomEmojis()" @promptselected.window="if ($event.detail.youAreDescriber) searchResults = getRandomEmojis()"> <!-- This could also be unplayable on small heights... Considering adding a query to change to remove auto and shrink-0 with basis-full, and use basis-full on the above div instead of grow -->
+						<div class="basis-19 items-end flex w-full justify-between overflow-hidden bg-red-200"> <!-- This will make clues unusable on very small heights (search results are not shown as this covers them); consider having breakpoints to remove the shrink-0 class -->
+							<div></div>
+							<div x-ref="cluePreview" class="flex flex-wrap items-end justify-start border-x border-t border-black bg-slate-300 max-h-full overflow-y-auto">
+								<div class="flex flex-col items-center bg-emerald-500" x-show="clue.length === 0">
+									<span>Click on emojis to add them to your clue</span>
+									<span>Click send when your clue is ready</span>
+								</div>
+								<template x-for="code in clue">
+									<img class="w-18 h-18" :src="$store.config.localMode ? `../emojis/images/${code}.png` : `https://openmoji.org/data/color/svg/${code}.svg`">	
+								</template>
+							</div>
+							<div class="shrink-0">
+								<button class="border border-black rounded-lg p-0.5" type="button" @click="clue.pop()">Undo</button>
+								<button class="border border-black rounded-lg p-0.5" type="button" @click="clue = []">Clear</button>
+								<button class="border border-black rounded-lg p-0.5" :class="{'text-orange-500': sending}" type="button" @click="$dispatch('send', {type: 'sendClue', clue: clue}); clue = []; sending = true;" :disabled="sending" @incomingclue.window="sending = false" x-data="{sending: false}">Send</button>
+							</div>
+						</div>
+						<div class="border-t border-black w-full flex flex-wrap items-center justify-center max-h-37 overflow-y-auto bg-red-400">
+							<span x-show="searchResults.length === 0">No results</span>
+							<template x-for="code in searchResults">
+								<img class="w-18 h-18 cursor-pointer hover:bg-purple-400" :src="$store.config.localMode ? `../emojis/images/${code}.png` : `https://openmoji.org/data/color/svg/${code}.svg`" :alt="emojis[code].name", :title="emojis[code].name" @click="clue.push(code); $nextTick(() => $refs.cluePreview.scrollTop = $refs.cluePreview.scrollHeight);">
+							</template>
+						</div>
+						<div class="flex gap-2 border-t justify-center border-black w-full bg-red-600">
+							<input type="text" placeholder="Search for emojis here..." @keyup.enter="search()" @input.debounce="if (fastSearch) search()" x-model="query">
+							<button type="button" @click="search()">Search</button>
+							<label title="Search results appear as you type - uses more data and requires a fast connection to work well">
+								<input type="checkbox" x-model="fastSearch">
+								Fast search
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="col-span-2 flex flex-col justify-between bg-lime-600 overflow-hidden">
+					<span class="font-bold text-center border-b border-black">Guess</span>
+					<div x-ref="guesses" class="flex flex-col grow justify-start overflow-y-auto" x-data="guesses" @begingame.window="showBegin($event.detail)" @continuegame.window="showProgress($event.detail)" @promptselected.window="showSelected($event.detail)" @incomingguess.window="showGuess($event.detail)" @promptguessed.window="showCorrectGuess($event.detail)" @turntimedout.window="showTimeout($event.detail)" @gameended.window="showEnded($event.detail)">
+						<template x-for="message in messages">
+							<span x-text="message"></span>
+						</template>
+					</div>
+					<div class="flex justify-between gap-2 border-t border-black" x-data="{guess: '', makeGuess() {$dispatch('send', {type: 'sendGuess', guess: this.guess}); this.guess = '';}}">
+						<input class="grow" type="text" placeholder="Guess here..." x-model="guess" @keyup.enter="makeGuess()">
+						<button type="button" @click=makeGuess()>Guess</button>
 					</div>
 				</div>
 			</div>
+			<div data-page="test" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data>
+				<p @keydown.1.window="$dispatch('incomingclue', {clue: ['1F680']})">Test</p>
+			</div>
 		</div>
-		<div class="page" id="directJoinPage">
-			<p id="directJoinCodeHolder" class="bold">Join lobby XXXX</p>
-			<p>Username:</p>
-			<input type="text" id="directJoinUsername" oninput="directJoinUsernameChange(this.value)" maxlength="15" autocomplete="off"></input>
-			<br>
-			<br>
-			<button type="button" id="directJoinConnectButton" onclick="attemptConnect()" disabled>Join</button>
-			<p>All emojis designed by <a href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
-		</div>
-		<div class="page" id="testPage">
-			<p>This is a test page</p>
-			<p>You should only be able to see this when on this simulated page</p>
+		<div class="basis-1/12 shrink-0 bg-purple-300">
+			<!-- Used to make the content slightly more on the top half of the screen, rather than in the center -->
 		</div>
 	</div>
 </body>
-
-</html>

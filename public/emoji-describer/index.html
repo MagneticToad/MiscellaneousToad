@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title x-data="{title: $store.config.nameOfGame}" @movetolobby.window="title = `${$store.config.nameOfGame} - ${$event.detail.lobbyCode}`" x-text="title">Emoji Describer</title>
+	<title x-data="{title: '', reset() {this.title = $store.config.nameOfGame}, addCode(code) {this.title = `${$store.config.nameOfGame} - ${code}`}}" @movetolobby.window="addCode($event.detail.lobbyCode)" @begingame.window="addCode($event.detail.lobbyCode)" @leavelobby.window="reset()" x-init="reset()" x-text="title">Emoji Describer</title>
 	<link rel="icon" href="https://openmoji.org/data/color/svg/1F63C.svg">
 	<script src="script.js"></script>
 	<script src="config.js"></script>
@@ -16,6 +16,7 @@
 			<div class="border-2 border-solid border-black border-b p-2">
 				<div class="flex justify-between" x-data="$store.config">
 					<p>Navigate through pages here</p>
+					<button x-bind="test">raw</button>
 					<button class="bg-stone-300 border border-black rounded-lg p-1" type="button" @click="localMode = !localMode" x-text="localMode ? 'Local mode' : 'Online mode'"></button>
 				</div>
 				<div class="flex gap-2">
@@ -25,21 +26,25 @@
 				</div>
 			</div>
 		</template>
-		<div class="flex flex-col justify-center items-center bg-yellow-300 grow overflow-hidden">
-			<div data-page="landing" class="border border-black flex flex-col justify-between items-center gap-12 py-6 px-10 bg-orange-300" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="login" @connected.window="loggingIn = false">
-				<div class="flex flex-col justify-center items-center gap-4">
-					<input class="border border-black" type="text" autocomplete="off" placeholder="Enter a name..." @keyup.enter="login()" @input="username = username.replace(/[^A-Za-z0-9 ]/g, '').replace(/^ /, '').replace(/(?<=.{15}).$/g, '')" x-model="username"></input>
-					<button class="bg-stone-300 border border-black rounded-lg p-0.5 px-3 disabled:opacity-50" :class="{'text-orange-500': loggingIn}" type="button" :disabled="!validUsername() || loggingIn" @click="login()" x-text="loggingIn ? 'Connecting...' : 'Play'"></button>
-				</div>
+		<div class="flex flex-col justify-center items-center bg-yellow-300 grow overflow-hidden" @unexpectederror="alert(`Error: ${$event.detail.details}`)" x-data>
+			<div data-page="landing" class="border border-black flex flex-col justify-between items-center gap-12 py-6 px-10 bg-orange-300" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="login" @connected.window="loggingIn = false" @connectionfailed.window="loggingIn = false">
+					<div class="flex flex-col justify-center items-center gap-4">
+						<div class="font-bold" x-show="code">
+							<span>Join game </span>
+							<span x-text="code"></span>
+						</div>
+						<input class="border border-black" type="text" autocomplete="off" placeholder="Enter a name..." @keyup.enter="login()" @input="username = username.replace(/[^A-Za-z0-9 ]/g, '').replace(/^ /, '').replace(/(?<=.{15}).$/g, '')" x-model="username"></input>
+						<button class="bg-stone-300 border border-black rounded-lg p-0.5 px-3 disabled:opacity-50" :class="{'text-orange-500': loggingIn}" type="button" :disabled="!validUsername() || loggingIn" @click="login()" x-text="code ? (loggingIn ? 'Joining...' : 'Join') : (loggingIn ? 'Connecting...' : 'Play')"></button>
+					</div>
 				<p>All emojis designed by <a class="underline text-blue-500" href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a class="underline text-blue-500" href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
 			</div>
 			<div data-page="home" class="grid grid-cols-5 grid-rows-2 border border-black bg-blue-300 h-4/6 w-5/12" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" @leavelobby.window="$dispatch('navigateto', $el.dataset.page)" @lobbydeleted.window="$dispatch('navigateto', $el.dataset.page); alert('The lobby you were in was deleted');" x-data>
-				<div class="col-span-2 row-span-1 bg-red-400 p-8 flex items-center justify-center grow" x-data="{creating: false}" @movetolobby.window="creating = false">
+				<div class="col-span-2 row-span-1 bg-red-400 p-8 flex items-center justify-center grow" x-data="{creating: false}" @movetolobby.window="creating = false" @alreadyinlobby.window="alert(`Failed to ${$event.detail.intent} lobby as you are already in one. If this seems to be an error, close the tab and try again.`); creating = false;" @unexpectederror.window="creating = false">
 					<button class="border border-black rounded-lg p-1 transition hover:rotate-6 hover:ease-in hover:duration-75" :class="{'text-orange-500': creating}" type="button" @click="$dispatch('send', {type: 'createLobby'}); creating = true;" x-text="creating ? 'Creating...' : 'Create new game'"></button>
 				</div>
-				<div class="col-start-1 col-span-2 row-start-2 row-end-2 flex flex-col gap-2 bg-teal-400 p-8 grow items-center justify-center" x-data="joinLobby" @movetolobby.window="joining = false" @lobbynotfound.window="notFound()" @invalidlobbycode.window="invalidCode()">
+				<div class="col-start-1 col-span-2 row-start-2 row-end-2 flex flex-col gap-2 bg-teal-400 p-8 grow items-center justify-center" x-data="joinLobby" @movetolobby.window="joining = false" @lobbynotfound.window="notFound()" @invalidlobbycode.window="invalidCode()" @alreadyinlobby.window="joining = false" @unexpectederror.window="joining = false">
 					<input type="text" placeholder="Enter code here" @input="code = code.replace(/[^A-Za-z]/g, '').replace(/(?<=.{5}).$/g, '').toUpperCase()" @keyup.enter="join()" x-model="code"></input>
-					<button class="border border-black rounded-lg p-1 transition enabled:hover:rotate-6 enabled:hover:ease-in enabled:hover:duration-75 disabled:opacity-50" :class="{'text-orange-500': joining}" @click="join()" type="button" :disabled="!/^[A-Z]{5}$/.test(code)" x-text="joining ? 'Joining...' : 'Join game'"></button>
+					<button class="border border-black rounded-lg p-1 transition enabled:hover:rotate-6 enabled:hover:ease-in enabled:hover:duration-75 disabled:opacity-50" :class="{'text-orange-500': joining}" @click="join()" type="button" :disabled="!/^[A-Z]{5}$/.test(code) || joining" x-text="joining ? 'Joining...' : 'Join game'"></button>
 				</div>
 				<div class="col-start-3 col-span-3 row-start-1 row-span-2 flex flex-col justify-between items-center p-4 gap-2">
 					<h1>Global chat</h1>
@@ -54,7 +59,7 @@
 					</div>
 				</div>
 			</div>
-			<div data-page="lobby" class="flex flex-col border border-black bg-rose-400 justify-between gap-4 h-4/6 w-5/12 overflow-hidden" x-cloak x-show="$store.pages.currentPage == $el.dataset.page"  x-data="{others: [], refresh(list) {this.others = list}}" @movetolobby.window="$dispatch('navigateto', $el.dataset.page)" @gameended.window="setTimeout(() => $dispatch('movetolobby', $event.detail), 1000*$store.config.postGameLingerTime)">
+			<div data-page="lobby" class="flex flex-col border border-black bg-rose-400 justify-between gap-4 h-4/6 w-5/12 overflow-hidden" x-cloak x-show="$store.pages.currentPage == $el.dataset.page"  x-data="{others: [], refresh(list) {this.others = list}}" @movetolobby.window="$dispatch('navigateto', $el.dataset.page)">
 				<div class="bg-slate-300 flex items-center justify-center gap-6" x-data="{lobbyCode: ''}" @movetolobby.window="lobbyCode = $event.detail.lobbyCode">
 					<div>
 						<span>Lobby code: </span>
@@ -166,22 +171,11 @@
 					</div>
 				</div>
 				<div class="bg-lime-300 flex items-center justify-center gap-6">
-					<button class="border border-black rounded-lg p-1" :class="{'text-orange-500': starting}" type="button" @click="$dispatch('send', {type: 'startGame'}); starting = true;" @begingame.window="starting = false" x-data="{starting: false}" :disabled="starting || others.length === 0" x-text="starting ? 'Starting...' : 'Start game'"></button>
-					<button class="border border-black rounded-lg p-1" :class="{'text-orange-500': leaving}" type="button" @click="$dispatch('send', {type: 'leaveLobby'}); leaving = true;" @leavelobby.window="leaving = false" x-data="{leaving: false}" :disabled="leaving" x-text="leaving ? 'Leaving...' : 'Leave'"></button>
+					<button class="border border-black rounded-lg p-1" :class="{'text-orange-500': starting}" type="button" @click="$dispatch('send', {type: 'startGame'}); starting = true;" @begingame.window="starting = false" @unexpectederror.window="starting = false" x-data="{starting: false}" :disabled="starting || others.length === 0" x-text="starting ? 'Starting...' : 'Start game'"></button>
+					<button class="border border-black rounded-lg p-1" :class="{'text-orange-500': leaving}" type="button" @click="$dispatch('send', {type: 'leaveLobby'}); leaving = true;" @leavelobby.window="leaving = false" @unexpectederror.window="leaving = false" x-data="{leaving: false}" :disabled="leaving" x-text="leaving ? 'Leaving...' : 'Leave'"></button>
 				</div>
 			</div>
-			<div data-page="directJoin" class="border border-black flex flex-col justify-between items-center gap-12 py-6 px-10 bg-orange-300" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="{code: ''}" x-init="code = window.location.search.substring(12)">
-				<div class="flex flex-col justify-center items-center gap-4" x-data="login(code)" @movetolobby.window="loggingIn = false">
-					<div class="font-bold">
-						<span>Join game </span>
-						<span x-text="code"></span>
-					</div>
-					<input class="border border-black" type="text" autocomplete="off" placeholder="Enter a name..." @keyup.enter="login()" @input="username = username.replace(/[^A-Za-z0-9 ]/g, '').replace(/^ /, '').replace(/(?<=.{15}).$/g, '')" x-model="username"></input>
-					<button class="bg-stone-300 border border-black rounded-lg p-0.5 px-3 disabled:opacity-50" :class="{'text-orange-500': loggingIn}" type="button" :disabled="!validUsername() || loggingIn" @click="login()" x-text="loggingIn ? 'Joining...' : 'Join'"></button>
-				</div>
-				<p>All emojis designed by <a class="underline text-blue-500" href="https://openmoji.org/" rel="nofollow">OpenMoji</a> – the open-source emoji and icon project. License: <a class="underline text-blue-500" href="https://creativecommons.org/licenses/by-sa/4.0/#" rel="nofollow">CC BY-SA 4.0</a></p>
-			</div>
-			<div data-page="game" class="border border-black grid grid-cols-6 h-5/6 w-3/4 overflow-hidden" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="game" @begingame.window="updateState($event.detail); $dispatch('navigateto', $el.dataset.page);" @continuegame.window="updateState($event.detail)" @playerjoinedgame.window="updateState($event.detail)" @playerleftgame.window="updateState($event.detail)" @promptselected.window="updateState($event.detail); waitingForSelection = false;">
+			<div data-page="game" class="border border-black grid grid-cols-6 h-5/6 w-3/4 overflow-hidden" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="game" @begingame.window="updateGameStarted($event.detail)" @continuegame.window="updateGameContinued($event.detail)" @playerjoinedgame.window="updateState($event.detail)" @playerleftgame.window="updatePlayerLeft($event.detail)" @promptselected.window="updatePromptSelected($event.detail)" @gameended.window="updateGameEnded($event.detail)">
 				<div class="col-span-1 flex flex-col bg-lime-200 gap-2">
 					<span class="font-bold text-center border-b border-black">Players</span>
 					<div>
@@ -216,7 +210,7 @@
 						</template>
 					</div>
 				</div>
-				<div class="col-span-3 flex flex-col justify-start bg-lime-400 gap-2 border-x border-black overflow-hidden" @keyup.y.window="youAreDescriber = !youAreDescriber" @keyup.w.window="waitingForSelection = !waitingForSelection">
+				<div class="col-span-3 flex flex-col justify-start bg-lime-400 gap-2 border-x border-black overflow-hidden">
 					<div class="basis-auto flex justify-between border-b border-black shrink-0 bg-amber-200 font-bold">
 						<div class="flex gap-1 bg-fuchsia-200">
 							<div class="flex gap-1">
@@ -241,24 +235,28 @@
 										<span>)</span>
 									</div>
 								</div>
-								<div class="flex gap-1" x-show="!youAreDescriber">
-									<span x-text="category"></span>
-									<div class="flex gap-1" x-show="promptMask">
-										<span>|</span>
-										<span x-text="promptMask"></span>
+								<div x-show="!youAreDescriber">
+									<div class="flex gap-1" x-show="!gameOver">
+										<span class="whitespace-pre tracking-wider" x-show="promptMask" x-text="promptMask"></span>
+										<div class="flex">
+											<span x-show="promptMask">(</span>
+											<span x-text="category"></span>
+											<span x-show="promptMask">)</span>
+										</div>
 									</div>
+									<span x-show="gameOver">Game over!</span>
 								</div>
 							</div>
 						</div>
 						<div class="bg-fuchsia-600">
-							<span class="text-red-500" x-data="timer" @begingame.window="startTimer($event.detail.timeTurnEnding)" @continueGame.window="startTimer($event.detail.timeTurnEnding)" x-text="timeRemaining" x-show="active"></span>
+							<span class="text-red-500" x-data="timer" @begingame.window="startTimer($event.detail.timeTurnEnding)" @continueGame.window="startTimer($event.detail.timeTurnEnding)" @gameended.window="cancel()" x-text="timeRemaining" x-show="active"></span>
 						</div>
 					</div>
-					<div class="basis-auto flex flex-col items-center gap-2 bg-pink-300" x-show="youAreDescriber && waitingForSelection" x-data="{selecting: false}" @prompselected.window="selected = false">
+					<div class="basis-auto flex flex-col items-center gap-2 bg-pink-300" x-show="youAreDescriber && waitingForSelection" x-data="{selecting: false}" @promptselected.window="selecting = false" @unexpectederror.window="selecting = false">
 						<span class="font-bold" :class="{'text-orange-500': selecting}" x-text="selecting ? 'Selecting...' : 'Choose a prompt'"></span>
 						<div class="flex justify-around gap-2 w-full">
 							<template x-for="(option, index) in promptOptions">
-								<div class="flex flex-col border items-center border-black p-2 hover:cursor-pointer hover:bg-slate-400" @click="$dispatch('send', {type: 'selectPrompt', promptNumber: index + 1}); selecting = true" :disable="selecting">
+								<div class="flex flex-col border items-center border-black p-2 hover:bg-slate-400" :class="{'cursor-pointer': !selecting, 'cursor-default opacity-50': selecting}" @click="if (!selecting) $dispatch('send', {type: 'selectPrompt', promptNumber: index + 1}); selecting = true">
 									<span class="font-bold" x-text="option.category"></span>
 									<span x-text="option.prompt"></span>
 								</div>
@@ -266,7 +264,7 @@
 						</div>
 					</div>
 					<div class="basis-19 grow flex flex-col items-center bg-yellow-300 max-h-full overflow-y-auto" x-data="{clues: []}" @incomingclue.window="clues.push($event.detail.clue); $nextTick(() => {$el.scrollTop = $el.scrollHeight});" @begingame.window="clues = []" @continuegame.window="clues = []">
-						<template x-for="clue in clues" @keydown.2.window="clues.pop()">
+						<template x-for="clue in clues">
 							<div class="flex">
 								<template x-for="code in clue">
 									<img class="w-18 h-18" :src="$store.config.localMode ? `../emojis/images/${code}.png` : `https://openmoji.org/data/color/svg/${code}.svg`" :alt="emojis[code].name", :title="emojis[code].name">
@@ -289,7 +287,7 @@
 							<div class="shrink-0">
 								<button class="border border-black rounded-lg p-0.5" type="button" @click="clue.pop()">Undo</button>
 								<button class="border border-black rounded-lg p-0.5" type="button" @click="clue = []">Clear</button>
-								<button class="border border-black rounded-lg p-0.5" :class="{'text-orange-500': sending}" type="button" @click="$dispatch('send', {type: 'sendClue', clue: clue}); clue = []; sending = true;" :disabled="sending" @incomingclue.window="sending = false" x-data="{sending: false}">Send</button>
+								<button class="border border-black rounded-lg p-0.5" :class="{'text-orange-500': sending}" type="button" @click="$dispatch('send', {type: 'sendClue', clue: clue}); clue = []; sending = true;" :disabled="sending" @incomingclue.window="sending = false" @unexpectederror.window="sending = false" x-data="{sending: false}">Send</button>
 							</div>
 						</div>
 						<div class="border-t border-black w-full flex flex-wrap items-center justify-center max-h-37 overflow-y-auto bg-red-400">
@@ -310,19 +308,19 @@
 				</div>
 				<div class="col-span-2 flex flex-col justify-between bg-lime-600 overflow-hidden">
 					<span class="font-bold text-center border-b border-black">Guess</span>
-					<div x-ref="guesses" class="flex flex-col grow justify-start overflow-y-auto" x-data="guesses" @begingame.window="showBegin($event.detail)" @continuegame.window="showProgress($event.detail)" @promptselected.window="showSelected($event.detail)" @incomingguess.window="showGuess($event.detail)" @promptguessed.window="showCorrectGuess($event.detail)" @turntimedout.window="showTimeout($event.detail)" @gameended.window="showEnded($event.detail)">
+					<div x-ref="guesses" class="flex flex-col grow justify-start overflow-y-auto" x-data="guesses" @begingame.window="showBegin($event.detail)" @continuegame.window="showProgress($event.detail)" @promptselected.window="showSelected($event.detail)" @incomingguess.window="showGuess($event.detail)" @promptguessed.window="showCorrectGuess($event.detail)" @turntimedout.window="showTimeout($event.detail)" @gameended.window="showEnded($event.detail)" @playerleftgame.window="showPlayerLeft($event.detail)">
 						<template x-for="message in messages">
 							<span x-text="message"></span>
 						</template>
 					</div>
-					<div class="flex justify-between gap-2 border-t border-black" x-data="{guess: '', makeGuess() {$dispatch('send', {type: 'sendGuess', guess: this.guess}); this.guess = '';}}">
+					<div class="flex justify-between gap-2 border-t border-black" x-data="{guess: '', makeGuess() {$dispatch('send', {type: 'sendGuess', guess: this.guess}); this.guess = '';}}" x-show="!youAreDescriber">
 						<input class="grow" type="text" placeholder="Guess here..." x-model="guess" @keyup.enter="makeGuess()">
 						<button type="button" @click=makeGuess()>Guess</button>
 					</div>
 				</div>
 			</div>
 			<div data-page="test" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data>
-				<p @keydown.1.window="$dispatch('incomingclue', {clue: ['1F680']})">Test</p>
+				<p>Test</p>
 			</div>
 		</div>
 		<div class="basis-1/12 shrink-0 bg-purple-300">

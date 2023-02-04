@@ -10,11 +10,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.store('pages', {
         init() {
             this.list = $("[data-page]").toArray().map(x => x.dataset.page);
-            if (/^\?directJoin=[A-Z]{5}$/.test(window.location.search)) {
-                this.navigateTo("directJoin");
-            } else {
-                this.navigateTo(config.landingPage);
-            }
+            this.navigateTo(config.landingPage);
         },
         list: [],
         currentPage: "",
@@ -45,6 +41,10 @@ document.addEventListener('alpine:init', () => {
                     message = JSON.parse(event.data);
                     window.dispatchEvent(new CustomEvent(message.type.toLowerCase(), {detail: message}));
                 }
+                this.webSocket.onerror = function(event) {
+                    alert("Connection failed!");
+                    window.dispatchEvent(new CustomEvent("connectionfailed"));
+                }
             }
         },
         send(params) {
@@ -56,15 +56,26 @@ document.addEventListener('alpine:init', () => {
         }
     });
 
-    Alpine.data('login', (code = undefined) => ({
+    Alpine.data('login', () => ({
         username: "",
         loggingIn: false,
+        code: "",
+        init() {
+            if (/^\?directJoin=[A-Z]{5}$/.test(window.location.search)) {
+                this.code = window.location.search.substring(12);
+                try {
+                    window.history.replaceState({}, document.title, '/emoji-describer/');
+                } catch {
+                    console.log("Could not replace URL");
+                }
+            }
+        },
         validUsername() {
             return config.usernameFormat.test(this.username);
         },
         login() {
             if (this.validUsername() && !this.loggingIn) {
-                this.$store.connection.attemptConnection(this.username, code);
+                this.$store.connection.attemptConnection(this.username, this.code);
                 this.loggingIn = true;
             }
         }
@@ -104,6 +115,7 @@ document.addEventListener('alpine:init', () => {
         notFound() {
             alert("Lobby not found!");
             this.joining = false;
+            this.$dispatch('navigateto', 'home');
         },
         invalidCode() {
             alert("Invalid code");
@@ -133,7 +145,7 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.data('game', () => ({
         waitingForSelection: false,
-        youAreDescriber: true,
+        youAreDescriber: false,
         otherPlayers: [],
         round: 0,
         newRound: false,
@@ -145,10 +157,47 @@ document.addEventListener('alpine:init', () => {
         you: {},
         maxRounds: 0,
         timeTurnEnding: 0,
+        gameOver: false,
         updateState(detail) {
             Object.keys(detail).forEach((key) => {
                 this[key] = detail[key];
             })
+        },
+        updateGameStarted(detail) { //###This overall is kinda ugly (not just this function; all of them)
+            this.promptOptions = [];
+            this.prompt = "";
+            this.category = "";
+            this.promptMask = "";
+            this.timeTurnEnding = 0;
+            this.gameOver = false;
+            this.updateState(detail);
+            this.$dispatch('navigateto', 'game');
+        },
+        updateGameContinued(detail) {
+            this.timeTurnEnding = 0;
+            this.promptOptions = [];
+            this.prompt = "";
+            this.category = "";
+            this.promptMask = "";
+            this.updateState(detail);
+        },
+        updatePlayerLeft(detail) {
+            this.describer = undefined; //default to this; updateState() will replace it if one was given
+            this.updateState(detail);
+        },
+        updatePromptSelected(detail) {
+            this.waitingForSelection = false;
+            this.prompt = "";
+            this.promptMask = "";
+            this.updateState(detail);
+        },
+        updateGameEnded(detail) {
+            this.updateState(detail);
+            this.describer = undefined; //not explicitly given by the event but implied; there is no describer once the game has ended
+            this.youAreDescriber = false; //see above
+            this.waitingForSelection = false;
+            this.gameOver = true;
+            setTimeout(() => this.$dispatch('movetolobby', {lobbyCode: detail.lobbyCode, settings: detail.settings, otherPlayers: detail.otherPlayers.map(x => x.username), you: detail.you.username}), this.$store.config.postGameLingerTime * 1000); //move to lobby wants an array of usernames, not objects with username and score
         }
     }));
 
@@ -175,6 +224,10 @@ document.addEventListener('alpine:init', () => {
         },
         secondsRemaining(endTime) {
             return Math.round((endTime - Date.now())/1000);
+        },
+        cancel() {
+            clearInterval(this.timeRemaining);
+            this.active = false;
         }
     }));
 
@@ -201,7 +254,7 @@ document.addEventListener('alpine:init', () => {
             if (detail.waitingForSelection) {
                 this.showMessage(`${detail.describer.username} is choosing a prompt`, true);
             } else {
-                this.showMessage(`The category is: ${category}`);
+                this.showMessage(`The category is: ${detail.category}`);
             }
         },
         showSelected(detail) {
@@ -212,11 +265,30 @@ document.addEventListener('alpine:init', () => {
             this.showMessage(`The ${detail.winners.length > 1 ? "winners are" : "winner is"} ${detail.winners.toString().replace(/,(?!.*,.*)/, " and ").replace(",", ", ")}`, true); //["Player"] => "The winner is Player", ["Player", "Gamer"] => "The winners are Player and Gamer", ["Player", "Gamer", "Participant"] => "The winners are Player, Gamer and Participant"
 	        this.showMessage(`Returning to the lobby in ${this.$store.config.postGameLingerTime} seconds`);
         },
+        showPlayerLeft(detail) {
+            if (detail.prompt) {
+                this.showMessage(`The describer left the game! The prompt was '${detail.prompt}'`);
+            }
+        },
         showMessage(message, shouldScroll) {
             this.messages.push(message);
             if (shouldScroll || (this.$refs.guesses.scrollTop + this.$refs.guesses.clientHeight >= this.$refs.guesses.scrollHeight)) { //if the guess column is scrolled, or this message should force a scroll
                 this.$nextTick(() => {this.$refs.guesses.scrollTop = this.$refs.guesses.scrollHeight})
             }
+        }
+    }));
+
+    Alpine.bind('test', () => ({
+        class: 'text-orange-500',
+        '@click'() {
+            alert('hey');
+        },
+        type: 'button',
+        'x-text'() {
+            return this.thing;
+        },
+        'x-data'() {
+            return {thing: 'hi'}
         }
     }));
 });

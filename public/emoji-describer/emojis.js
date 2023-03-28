@@ -7,11 +7,11 @@ function getMatchingEmojis(query) {
 			remaining--;
 			// console.log('%c ', `font-size:100px; background:url(https://openmoji.org/data/color/svg/${code}.svg) no-repeat; background-size: contain;`);
 		}
-		if (remaining == 0) { //if 20 have been got
+		if (remaining == 0) { //if the show limit has been reached
 			return codes;
 		}
 	};
-	return codes; //if less than 20 were found
+	return codes; //if less than the limit were found
 }
 
 function getRandomEmojis() {
@@ -21,7 +21,7 @@ function getRandomEmojis() {
 	for (var x = 0; x < config.emojiSearchLimit; x++) {
 		codes.push(keys[keys.length * Math.random() << 0]);
 	};
-	return codes; //if less than 20 were found
+	return codes;
 }
 
 function matchesTags(string, taglist) {

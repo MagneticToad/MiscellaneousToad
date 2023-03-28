@@ -9,7 +9,7 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.store('pages', {
         init() {
-            this.list = $("[data-page]").toArray().map(x => x.dataset.page);
+            this.list = [...document.querySelectorAll("[data-page]")].map(x => x.dataset.page);
             this.navigateTo(config.landingPage);
         },
         list: [],
@@ -26,7 +26,7 @@ document.addEventListener('alpine:init', () => {
                 this.webSocket = new WebSocket(`${config.socketURL}?username=${username}`);
                 this.webSocket.onopen = function(event) {
                     window.dispatchEvent(new CustomEvent("connected"));
-                    if (code && /^[A-Z]{5}$/.test(code)) { //if a code was given, and it is valid
+                    if (code && config.lobbyCodeFormat.test(code)) { //if a code was given, and it is valid
                         window.dispatchEvent(new CustomEvent("send", {detail: {type: 'joinLobby', lobbyCode: code}}));
                     } else { //if not direct joining
                         window.dispatchEvent(new CustomEvent("navigateto", {detail: "home"}));
@@ -56,6 +56,19 @@ document.addEventListener('alpine:init', () => {
         }
     });
 
+    Alpine.store('util', {
+        stringToColour(string) {
+            let hash = string.split("").reduce((accumulator, currentValue) => accumulator + currentValue.charCodeAt(), 0);
+            return config.lobbyPlayerColours[hash%config.lobbyPlayerColours.length];
+        },
+        isScrolled(element) {
+            return element.scrollTop + element.clientHeight >= element.scrollHeight
+        },
+        scroll(element) {
+            element.scrollTop = element.scrollHeight
+        }
+    });
+
     Alpine.data('login', () => ({
         username: "",
         loggingIn: false,
@@ -78,15 +91,108 @@ document.addEventListener('alpine:init', () => {
                 this.$store.connection.attemptConnection(this.username, this.code);
                 this.loggingIn = true;
             }
+        },
+        sanitiseUsername() {
+            this.username = this.username.replace(/[^A-Za-z0-9 ]/g, '').replace(/^ /, '').replace(/(?<=.{15}).$/g, '')
         }
     }));
 
+    Alpine.bind('loginEvents', () => ({
+        ['@connected.window']() {
+            this.loggingIn = false;
+        },
+        ['@connectionfailed.window']() {
+            this.loggingIn = false;
+        }
+    }));
+
+    Alpine.bind('homeEvents', () => ({
+        ['@leavelobby.window']() {
+            this.$dispatch('navigateto', this.$el.dataset.page);
+        },
+        ['@lobbydeleted.window']() {
+            this.$dispatch('navigateto', this.$el.dataset.page);
+            alert('The lobby you were in was deleted');
+        }
+    }));
+
+    Alpine.data('createLobby', () => ({
+        creating: false,
+        create() {
+            this.$dispatch('send', {type: 'createLobby'});
+            this.creating = true;
+        }
+    }));
+
+    Alpine.bind('creatingEvents', () => ({
+        ['@movetolobby.window']() {
+            this.creating = false;
+        },
+        ['@alreadyinlobby.window']() {
+            if (this.$event.detail.intent === 'create') {
+                alert('Failed to create a lobby as you are already in one. If this appears to be an error, refresh the page and try again.');
+                this.creating = false;
+            }
+        },
+        ['@unexpectederror.window']() {
+            this.creating = false;
+        }
+    }));
+
+    Alpine.data('joinLobby', () => ({
+        code: '',
+        joining: false,
+        join() {
+            if (this.validCode()) {
+                this.joining = true;
+                this.$dispatch('send', {type: 'joinLobby', lobbyCode: this.code});
+            }
+        },
+        sanitiseCode() {
+            this.code = this.code.replace(/[^A-Za-z]/g, '').replace(/(?<=.{5}).$/g, '').toUpperCase()
+        },
+        validCode() {
+            return config.lobbyCodeFormat.test(this.code);
+        }
+    }));
+
+    Alpine.bind('joiningEvents', () => ({
+        ['@movetolobby.window']() {
+            this.joining = false;
+        },
+        ['@lobbynotfound.window']() {
+            alert("Lobby not found!");
+            this.joining = false;
+            this.$dispatch('navigateto', 'home');
+            this.code = "";
+        },
+        ['@invalidlobbycobe.window']() {
+            alert("Invalid code");
+            this.joining = false;
+            this.code = "";
+        },
+        ['@alreadyinlobby.window']() {
+            if (this.$event.detail.intent === 'join') {
+                alert('Failed to join the lobby as you are already in one. If this appears to be an error, refresh the page and try again.');
+                this.joining = false;
+            }
+        },
+        ['@unexpectederror.window']() {
+            this.joining = false;
+            this.code = "";
+        }
+    }));
+    
     Alpine.data('chatWindow', () => ({
         messages: [],
         scrollIfScrolled(el) {
-            if (el.scrollTop + el.clientHeight >= el.scrollHeight) {
-                this.$nextTick(() => {el.scrollTop = el.scrollHeight})
+            if (this.$store.util.isScrolled(el)) {
+                this.$nextTick(() => this.$store.util.scroll(el));
             }
+        },
+        addMessage(message) {
+            this.messages.push(message);
+            this.scrollIfScrolled(this.$el);
         }
     }));
 
@@ -103,23 +209,25 @@ document.addEventListener('alpine:init', () => {
         }
     }));
 
-    Alpine.data('joinLobby', () => ({
-        code: "",
-        joining: false,
-        join() {
-            if (/^[A-Z]{5}$/.test(this.code)) {
-                this.joining = true;
-                this.$dispatch('send', {type: 'joinLobby', lobbyCode: this.code});
-            }
+    Alpine.data('invite', () => ({
+        lobbyCode: '',
+        copied: false,
+        copyLink() {
+            navigator.clipboard.writeText(`${window.location.href.replace(/\?.*$/, '')}?directJoin=${this.lobbyCode}`);
+            this.copied = true;
+            setTimeout(() => this.copied = false, 750)
+        }
+    }));
+
+    Alpine.bind('lobbyPlayersEvents', () => ({
+        ['@movetolobby.window']() {
+            this.others = this.$event.detail.otherPlayers;
         },
-        notFound() {
-            alert("Lobby not found!");
-            this.joining = false;
-            this.$dispatch('navigateto', 'home');
+        ['@playerjoinedlobby.window']() {
+            this.others = this.$event.detail.otherPlayers;
         },
-        invalidCode() {
-            alert("Invalid code");
-            this.joining = false;
+        ['@playerleftlobby.window']() {
+            this.others = this.$event.detail.otherPlayers;
         }
     }));
 
@@ -143,6 +251,49 @@ document.addEventListener('alpine:init', () => {
         }
     }));
 
+    Alpine.bind('settingsEvents', () => ({
+        ['@movetolobby.window']() {
+            this.settingsChanged(this.$event.detail.settings);
+        },
+        ['@settingchanged.window']() {
+            this.settingChanged(this.$event.detail.setting, this.$event.detail.newValue);
+        }
+    }));
+
+    Alpine.data('startGame', () => ({
+        starting: false,
+        start() {
+            this.$dispatch('send', {type: 'startGame'});
+            this.starting = true;
+        }
+    }));
+
+    Alpine.bind('startGameEvents', () => ({
+        ['@begingame.window']() {
+            this.starting = false;
+        },
+        ['@unexpectederror.window']() {
+            this.starting = false;
+        }
+    }));
+
+    Alpine.data('leaveLobby', () => ({
+        leaving: false,
+        leave() {
+            this.$dispatch('send', {type: 'leaveLobby'});
+            this.leaving = true;
+        }
+    }));
+
+    Alpine.bind('leaveLobbyEvents', () => ({
+        ['@leavelobby.window']() {
+            this.leaving = false;
+        },
+        ['@unexpectederror.window']() {
+            this.leaving = false;
+        }
+    }));
+
     Alpine.data('game', () => ({
         waitingForSelection: false,
         youAreDescriber: false,
@@ -158,46 +309,59 @@ document.addEventListener('alpine:init', () => {
         maxRounds: 0,
         timeTurnEnding: 0,
         gameOver: false,
+        init() {
+            this.clearState();
+        },
+        ownKeys() { //there should be an inbuilt way to do this, but this is all I could get to work
+            let keys = [];
+            for (let thing of Object.getOwnPropertyNames(this)) {
+                if (/^[^\$]/.test(thing)) { //if it doesn't start with a $ (prune out $event)
+                    if (["object", "boolean", "number", "string"].includes(typeof this[thing])) {
+                        keys.push(thing);
+                    }
+                }
+            }
+            return keys;
+        },
+        clearState() {
+            for (let key of this.ownKeys()) {
+                this[key] = null;
+            }
+        },
         updateState(detail) {
             Object.keys(detail).forEach((key) => {
                 this[key] = detail[key];
             })
-        },
-        updateGameStarted(detail) { //###This overall is kinda ugly (not just this function; all of them)
-            this.promptOptions = [];
-            this.prompt = "";
-            this.category = "";
-            this.promptMask = "";
-            this.timeTurnEnding = 0;
-            this.gameOver = false;
-            this.updateState(detail);
+        }
+    }));
+
+    Alpine.bind('gameEvents', () => ({
+        ['@begingame.window']() {
+            this.clearState();
+            this.updateState(this.$event.detail);
             this.$dispatch('navigateto', 'game');
         },
-        updateGameContinued(detail) {
-            this.timeTurnEnding = 0;
-            this.promptOptions = [];
-            this.prompt = "";
-            this.category = "";
-            this.promptMask = "";
-            this.updateState(detail);
+        ['@continuegame.window']() {
+            this.updateState(this.$event.detail);
         },
-        updatePlayerLeft(detail) {
+        ['@playerjoinedgame.window']() {
+            this.updateState(this.$event.detail);
+        },
+        ['@playerleftgame.window']() {
             this.describer = undefined; //default to this; updateState() will replace it if one was given
-            this.updateState(detail);
+            this.updateState(this.$event.detail);
         },
-        updatePromptSelected(detail) {
+        ['@promptselected.window']() {
             this.waitingForSelection = false;
-            this.prompt = "";
-            this.promptMask = "";
-            this.updateState(detail);
+            this.updateState(this.$event.detail);
         },
-        updateGameEnded(detail) {
-            this.updateState(detail);
+        ['@gameended.window']() {
+            this.updateState(this.$event.detail);
             this.describer = undefined; //not explicitly given by the event but implied; there is no describer once the game has ended
             this.youAreDescriber = false; //see above
             this.waitingForSelection = false;
             this.gameOver = true;
-            setTimeout(() => this.$dispatch('movetolobby', {lobbyCode: detail.lobbyCode, settings: detail.settings, otherPlayers: detail.otherPlayers.map(x => x.username), you: detail.you.username}), this.$store.config.postGameLingerTime * 1000); //move to lobby wants an array of usernames, not objects with username and score
+            setTimeout(() => this.$dispatch('movetolobby', {lobbyCode: this.$event.detail.lobbyCode, settings: this.$event.detail.settings, otherPlayers: this.$event.detail.otherPlayers.map(x => x.username), you: this.$event.detail.you.username}), config.postGameLingerTime * 1000); //move to lobby wants an array of usernames, not objects with username and score
         }
     }));
 
@@ -231,6 +395,102 @@ document.addEventListener('alpine:init', () => {
         }
     }));
 
+    Alpine.bind('timerEvents', () => ({
+        ['@begingame.window']() {
+            this.startTimer(this.$event.detail.timeTurnEnding);
+        },
+        ['@continuegame.window']() {
+            this.startTimer(this.$event.detail.timeTurnEnding);
+        },
+        ['@gameended.window']() {
+            this.cancel();
+        }
+    }));
+
+    Alpine.data('selectPrompt', () => ({
+        selecting: false,
+        select(index) {
+            if (!this.selecting) {
+                this.$dispatch('send', {type: 'selectPrompt', promptNumber: index + 1}); //selectPrompt is 1-based but index is 0-based
+                this.selecting = true;
+            }
+        }
+    }));
+
+    Alpine.bind('selectingEvents', () => ({
+        ['@promptselected.window']() {
+            this.selecting = false;
+        },
+        ['@unexpectederror.window']() {
+            this.selecting = false;
+        }
+    }));
+    
+    Alpine.bind('clueEvents', () => ({
+        ['@incomingclue.window']() {
+            this.clues.push(this.$event.detail.clue);
+            this.$nextTick(() => this.$store.util.scroll(this.$el));
+        },
+        ['@begingame.window']() {
+            this.clues = [];
+        },
+        ['@continuegame.window']() {
+            this.clues = [];
+        }
+    }));
+
+    Alpine.data('buildClue', () => ({
+        query: '',
+        searchResults: [],
+        clue: [],
+        fastSearch: false,
+        sending: false,
+        search() {
+            this.searchResults = getMatchingEmojis(this.query);
+            if (!this.fastSearch) {
+                this.query = '';
+            }
+        },
+        sendClue() {
+            this.$dispatch('send', {type: 'sendClue', clue: this.clue});
+            this.clue = [];
+            this.sending = true;
+        },
+        addToClue(code) {
+            this.clue.push(code);
+            this.$nextTick(() => this.$store.util.scroll(this.$refs.cluePreview));
+        },
+        startWithRandom() {
+            this.query = '';
+            this.clue = [];
+            this.searchResults = getRandomEmojis();
+        }
+    }));
+
+    Alpine.bind('buildClueEvents', () => ({
+        ['@begingame.window']() {
+            if (this.$event.detail.youAreDescriber && !this.$event.detail.waitingForSelection) {
+                this.startWithRandom();
+            }
+        },
+        ['@continuegame.window']() {
+            if (this.$event.detail.youAreDescriber && !this.$event.detail.waitingForSelection) {
+                this.startWithRandom();
+            }
+        },
+        ['@promptselected.window']() {
+            if (this.$event.detail.youAreDescriber) {
+                this.startWithRandom();
+            }
+        },
+        ['@incomingclue.window']() {
+            this.sending = false;
+        },
+        ['@unexpectederror.window']() {
+            this.sending = false;
+        }
+    }));
+
     Alpine.data('guesses', () => ({
         messages: [],
         showGuess(detail) {
@@ -250,7 +510,7 @@ document.addEventListener('alpine:init', () => {
             if (detail.newRound) {
                 this.showMessage(`Round ${detail.round}`, true);
             }
-            this.showMessage(`${detail.describer.username} is describing`, true);
+            this.showMessage(`${detail.describer.username}'s turn to describe`, true);
             if (detail.waitingForSelection) {
                 this.showMessage(`${detail.describer.username} is choosing a prompt`, true);
             } else {
@@ -263,7 +523,7 @@ document.addEventListener('alpine:init', () => {
         showEnded(detail) {
             this.showMessage("The game has finished", true);
             this.showMessage(`The ${detail.winners.length > 1 ? "winners are" : "winner is"} ${detail.winners.toString().replace(/,(?!.*,.*)/, " and ").replace(",", ", ")}`, true); //["Player"] => "The winner is Player", ["Player", "Gamer"] => "The winners are Player and Gamer", ["Player", "Gamer", "Participant"] => "The winners are Player, Gamer and Participant"
-	        this.showMessage(`Returning to the lobby in ${this.$store.config.postGameLingerTime} seconds`);
+	        this.showMessage(`Returning to the lobby in ${config.postGameLingerTime} seconds`);
         },
         showPlayerLeft(detail) {
             if (detail.prompt) {
@@ -272,23 +532,77 @@ document.addEventListener('alpine:init', () => {
         },
         showMessage(message, shouldScroll) {
             this.messages.push(message);
-            if (shouldScroll || (this.$refs.guesses.scrollTop + this.$refs.guesses.clientHeight >= this.$refs.guesses.scrollHeight)) { //if the guess column is scrolled, or this message should force a scroll
-                this.$nextTick(() => {this.$refs.guesses.scrollTop = this.$refs.guesses.scrollHeight})
+            if (shouldScroll || (this.$store.util.isScrolled(this.$refs.guesses))) { //if the guess column is scrolled, or this message should force a scroll
+                this.$nextTick(() => this.$store.util.scroll(this.$refs.guesses))
             }
         }
     }));
 
-    Alpine.bind('test', () => ({
-        class: 'text-orange-500',
-        '@click'() {
-            alert('hey');
+    Alpine.bind('guessesEvents', () => ({
+        ['@begingame.window']() {
+            this.showBegin(this.$event.detail);
         },
-        type: 'button',
-        'x-text'() {
-            return this.thing;
+        ['@continuegame.window']() {
+            this.showProgress(this.$event.detail);
         },
-        'x-data'() {
-            return {thing: 'hi'}
+        ['@promptselected.window']() {
+            this.showSelected(this.$event.detail);
+        },
+        ['@incomingguess.window']() {
+            this.showGuess(this.$event.detail);
+        },
+        ['@promptguessed.window']() {
+            this.showCorrectGuess(this.$event.detail);
+        },
+        ['@turntimedout.window']() {
+            this.showTimeout(this.$event.detail);
+        },
+        ['@playerleftgame.window']() {
+            this.showPlayerLeft(this.$event.detail);
+        },
+        ['@gameended.window']() {
+            this.showEnded(this.$event.detail);
+        }
+    }));
+
+    Alpine.data('guess', () => ({
+        guess: '',
+        makeGuess() {
+            this.$dispatch('send', {type: 'sendGuess', guess: this.guess});
+            this.guess = '';
+        }
+    }));
+
+    Alpine.data('backgroundAnimations', () => ({
+        animations: [],
+        currentAnimation: "",
+        playedAnimations: [],
+        init() {
+            this.animations = [...document.querySelectorAll("[data-bganimation]")].map(x => x.dataset.bganimation);
+            if (config.animationsEnabled) {
+                setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower) * 1000);
+            }
+        },
+        changeAnimation() {
+            let newAnimations = this.animations.filter(x => !this.playedAnimations.includes(x)); //ones yet to be played in the current cycle
+            if (newAnimations.length === 0) {
+                console.log("All have been played; looping again"); //###DEBUG
+                newAnimations = this.animations.filter(x => x != this.currentAnimation); //all animations except the current one (stop the same animation going twice in a row)
+                this.playedAnimations = []; //start a new cycle
+            }
+            this.currentAnimation = newAnimations[Math.floor(Math.random()*newAnimations.length)]; //a random one
+            this.playedAnimations.push(this.currentAnimation);
+            this.$nextTick(() => {
+                let currentDuration = Number(getComputedStyle(document.querySelector(`[data-bganimation="${this.currentAnimation}"]`)).animationDuration.replace(/s$/, ''));
+                console.log(`Started ${this.currentAnimation} which has a duration of ${currentDuration}`);//###Debug
+                setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower + currentDuration) * 1000);
+            });
+        }
+    }));
+
+    Alpine.bind('backgroundAnimation', (extraClasses) => ({
+        [':class']() {
+            return 'absolute ' + extraClasses + ' ' + (this.currentAnimation == this.$el.dataset.bganimation ? `animate-bg-${this.$el.dataset.bganimation}` : 'hidden');
         }
     }));
 });

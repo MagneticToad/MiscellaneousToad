@@ -283,7 +283,7 @@
 								<img class="w-4 h-4" src="https://openmoji.org/data/color/svg/2B50.svg">
 								<span x-text="you?.score"></span>
 							</div>
-							<div class="col-start-2 flex items-center" :class="$store.util.stringToColour(you.username)">
+							<div class="col-start-2 flex items-center" :class="$store.util.stringToColour(you?.username)">
 								<span x-text="you?.username"></span>
 								<span class="pl-1 shrink-0">(you)</span>
 								<img x-show="youAreDescriber" class="w-8 h-8" src="https://openmoji.org/data/color/svg/270F.svg">
@@ -422,223 +422,226 @@
 		<div class="basis-1/12 shrink-0 z-20">
 			<!-- Used to make the content slightly more on the top half of the screen, rather than in the center -->
 		</div>
-		<div class="contents z-10" x-data="backgroundAnimations" x-show="config.animationsEnabled" x-cloak>
-			<div data-bganimation="racecar" x-bind="backgroundAnimation('top-1/2')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F3CE.svg">
-			</div>
-			<div data-bganimation="train" x-bind="backgroundAnimation('top-2/3 flex')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F682.svg">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F683.svg">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F683.svg">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F683.svg">
-			</div>
-			<div data-bganimation="policechase" x-bind="backgroundAnimation('top-1/3 flex gap-32')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F697.svg">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F693.svg">
-			</div>
-			<div data-bganimation="boomerang" x-bind="backgroundAnimation('top-2/3')">
-				<img class="w-18 h-18 animate-bg-spinfast" src="https://openmoji.org/data/color/svg/1FA83.svg">
-			</div>
-			<div data-bganimation="apple" x-bind="backgroundAnimation('left-1/3')">
-				<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F34E.svg">
-			</div>
-			<div data-bganimation="joy" x-bind="backgroundAnimation('top-2/3')">
-				<img class="w-18 h-18 animate-bg-spinfast" src="https://openmoji.org/data/color/svg/1F602.svg">
-			</div>
-			<div data-bganimation="spaceship" x-bind="backgroundAnimation('left-1/2 flex flex-col')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/E20B.svg">
-				<img class="w-18 h-18 rotate-90" src="https://openmoji.org/data/color/svg/1F4A8.svg">
-			</div>
-			<div data-bganimation="tennischase" x-bind="backgroundAnimation('top-2/3 flex gap-96')">
-				<img class="w-18 h-18 animate-bg-bounce" src="https://openmoji.org/data/color/svg/1F3BE.svg">
-				<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F415.svg">
-			</div>
-			<div data-bganimation="rocket" x-bind="backgroundAnimation('')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F680.svg">
-			</div>
-			<div data-bganimation="abduction" x-bind="backgroundAnimation('top-3/4 flex flex-col')">
-				<img class="w-18 h-18 animate-bg-wobble" src="https://openmoji.org/data/color/svg/1F6F8.svg">
-				<img class="w-18 h-18 rotate-180 animate-bg-ufobeam" src="https://openmoji.org/data/color/svg/1F32A.svg">
-				<img class="w-18 h-18 animate-bg-sheepfloat" src="https://openmoji.org/data/color/svg/1F411.svg">				
-			</div>
-			<div data-bganimation="ninja" x-bind="backgroundAnimation('top-3/4 left-1/2')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F977.svg">			
-			</div>
-			<div data-bganimation="horse" x-bind="backgroundAnimation('top-1/4 flex flex-col')">
-				<div class="-scale-x-100">
-					<img class="w-18 h-18 rotate-180 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F3C7.svg">	
+		<template x-if="config.animationsEnabled" x-data>
+			<div class="contents z-10" x-data="backgroundAnimations" x-show="config.animationsEnabled" @keyup.equal.window="paused=true">
+				<div data-bganimation="racecar" x-bind="backgroundAnimation('top-1/2')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F3CE.svg">
 				</div>
-			</div>
-			<div data-bganimation="triplechase" x-bind="backgroundAnimation('top-1/3')">
-				<div class="flex gap-96 -scale-x-100">
-					<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F401.svg">
-					<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F408.svg">
-					<span></span>
-					<img class="w-18 h-18 animate-bg-waggle" src="https://openmoji.org/data/color/svg/1F415.svg">
-				</div>	
-			</div>
-			<div data-bganimation="coconut" x-bind="backgroundAnimation('left-2/3')">
-				<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F965.svg">
-			</div>
-			<div data-bganimation="shoppingcart" x-bind="backgroundAnimation('top-2/3')">
-				<div class="flex gap-32 -scale-x-100">
-					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F6D2.svg">
-					<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F3C3.svg">
+				<div data-bganimation="train" x-bind="backgroundAnimation('top-2/3 flex')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F682.svg">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F683.svg">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F683.svg">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F683.svg">
 				</div>
-			</div>
-			<div data-bganimation="parachute" x-bind="backgroundAnimation('left-1/2 flex flex-col gap-96')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1FA82.svg">
-				<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F938.svg">
-			</div>
-			<div data-bganimation="airplane" x-bind="backgroundAnimation('')">
-				<img class="w-18 h-18 rotate-[270deg]" src="https://openmoji.org/data/color/svg/1F6E9.svg">
-			</div>
-			<div data-bganimation="takeoff" x-bind="backgroundAnimation('top-2/3')">
-				<div class="rotate-[-14deg]">
-					<img class="w-18 h-18 animate-bg-liftoff" src="https://openmoji.org/data/color/svg/1F6EC.svg">
+				<div data-bganimation="policechase" x-bind="backgroundAnimation('top-1/3 flex gap-32')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F697.svg">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F693.svg">
 				</div>
-			</div>
-			<div data-bganimation="tardis" x-bind="backgroundAnimation('top-1/2')">
-				<div class="animate-bg-oscillate">
-					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/E149.svg">
+				<div data-bganimation="boomerang" x-bind="backgroundAnimation('top-2/3')">
+					<img class="w-18 h-18 animate-bg-spinfast" src="https://openmoji.org/data/color/svg/1FA83.svg">
 				</div>
-			</div>
-			<div data-bganimation="shootingstar" x-bind="backgroundAnimation('left-2/3')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F320.svg">
-			</div>
-			<div data-bganimation="planet" x-bind="backgroundAnimation('top-1/2')">
-				<img class="w-18 h-18 animate-bg-updownup" src="https://openmoji.org/data/color/svg/1FA90.svg">
-			</div>
-			<div data-bganimation="comet" x-bind="backgroundAnimation('left-1/3')">
-				<div class="-scale-x-100">
-					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/2604.svg">
+				<div data-bganimation="apple" x-bind="backgroundAnimation('left-1/3')">
+					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F34E.svg">
 				</div>
-			</div>
-			<div data-bganimation="kite" x-bind="backgroundAnimation('top-3/4 grid grid-rows-2 grid-cols-2')">
-				<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-float" src="https://openmoji.org/data/color/svg/1FA81.svg">
-				<img class="w-18 h-18 row-start-2 col-start-2 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F57A.svg">
-			</div>
-			<div data-bganimation="surfing" x-bind="backgroundAnimation('top-3/4 flex')">
-				<img class="w-18 h-18 animate-bg-wobble" src="https://openmoji.org/data/color/svg/1F30A.svg">
-				<img class="w-18 h-18 animate-bg-surfer" src="https://openmoji.org/data/color/svg/1F3C4.svg">
-			</div>
-			<div data-bganimation="satellite" x-bind="backgroundAnimation('top-1/2')">
-				<img class="w-18 h-18 animate-bg-updown" src="https://openmoji.org/data/color/svg/1F6F0.svg">
-			</div>
-			<div data-bganimation="broom" x-bind="backgroundAnimation('top-3/4 flex')">
-				<img class="w-18 h-18 animate-bg-sweep" src="https://openmoji.org/data/color/svg/1F9F9.svg">
-				<img class="w-18 h-18 rotate-[270deg]" src="https://openmoji.org/data/color/svg/1F5D1.svg">
-			</div>
-			<div data-bganimation="fly" x-bind="backgroundAnimation('top-1/2')">
-				<div class="animate-bg-buzz">
-					<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1FAB0.svg">
+				<div data-bganimation="joy" x-bind="backgroundAnimation('top-2/3')">
+					<img class="w-18 h-18 animate-bg-spinfast" src="https://openmoji.org/data/color/svg/1F602.svg">
 				</div>
-			</div>
-			<div data-bganimation="speedboat" x-bind="backgroundAnimation('top-3/4')">
-				<img class="w-18 h-18 animate-bg-porpoise" src="https://openmoji.org/data/color/svg/1F6A4.svg">
-			</div>
-			<div data-bganimation="breach" x-bind="backgroundAnimation('left-1/2 flex')">
-				<img class="w-18 h-18 animate-bg-breachsplashl" src="https://openmoji.org/data/color/svg/1F4A6.svg">
-				<div class="-scale-x-100 rotate-[280deg]">
-					<img class="w-18 h-18 animate-bg-whale" src="https://openmoji.org/data/color/svg/1F40B.svg">
+				<div data-bganimation="spaceship" x-bind="backgroundAnimation('left-1/2 flex flex-col')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/E20B.svg">
+					<img class="w-18 h-18 rotate-90" src="https://openmoji.org/data/color/svg/1F4A8.svg">
 				</div>
-				<img class="w-18 h-18 animate-bg-breachsplashr" src="https://openmoji.org/data/color/svg/1F4A6.svg">
-			</div>
-			<div data-bganimation="ring" x-bind="backgroundAnimation('left-1/4 flex flex-col h-screen justify-between')">
-				<div class="animate-bg-fall">
-					<div class="animate-bg-destroy">
-						<img class="w-18 h-18 animate-bg-spinslow" src="https://openmoji.org/data/color/svg/1F48D.svg">
+				<div data-bganimation="tennischase" x-bind="backgroundAnimation('top-2/3 flex gap-96')">
+					<img class="w-18 h-18 animate-bg-bounce" src="https://openmoji.org/data/color/svg/1F3BE.svg">
+					<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F415.svg">
+				</div>
+				<div data-bganimation="rocket" x-bind="backgroundAnimation('')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F680.svg">
+				</div>
+				<div data-bganimation="abduction" x-bind="backgroundAnimation('top-3/4 flex flex-col')">
+					<img class="w-18 h-18 animate-bg-wobble" src="https://openmoji.org/data/color/svg/1F6F8.svg">
+					<img class="w-18 h-18 rotate-180 animate-bg-ufobeam" src="https://openmoji.org/data/color/svg/1F32A.svg">
+					<img class="w-18 h-18 animate-bg-sheepfloat" src="https://openmoji.org/data/color/svg/1F411.svg">				
+				</div>
+				<div data-bganimation="ninja" x-bind="backgroundAnimation('top-3/4 left-1/2')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F977.svg">			
+				</div>
+				<div data-bganimation="horse" x-bind="backgroundAnimation('top-1/4 flex flex-col')">
+					<div class="-scale-x-100">
+						<img class="w-18 h-18 rotate-180 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F3C7.svg">	
 					</div>
 				</div>
-				<div class="grid grid-rows-1 grid-cols-1">
-					<div class="animate-bg-emerge row-start-1 col-start-1">
-						<div class="animate-bg-rumble">
-							<img class="w-18 h-18 animate-bg-destroy" src="https://openmoji.org/data/color/svg/1F30B.svg">
+				<div data-bganimation="triplechase" x-bind="backgroundAnimation('top-1/3')">
+					<div class="flex gap-96 -scale-x-100">
+						<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F401.svg">
+						<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F408.svg">
+						<span></span>
+						<img class="w-18 h-18 animate-bg-waggle" src="https://openmoji.org/data/color/svg/1F415.svg">
+					</div>	
+				</div>
+				<div data-bganimation="coconut" x-bind="backgroundAnimation('left-2/3')">
+					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F965.svg">
+				</div>
+				<div data-bganimation="shoppingcart" x-bind="backgroundAnimation('top-2/3')">
+					<div class="flex gap-32 -scale-x-100">
+						<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F6D2.svg">
+						<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F3C3.svg">
+					</div>
+				</div>
+				<div data-bganimation="parachute" x-bind="backgroundAnimation('left-1/2 flex flex-col gap-96')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1FA82.svg">
+					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F938.svg">
+				</div>
+				<div data-bganimation="airplane" x-bind="backgroundAnimation('')">
+					<img class="w-18 h-18 rotate-[270deg]" src="https://openmoji.org/data/color/svg/1F6E9.svg">
+				</div>
+				<div data-bganimation="takeoff" x-bind="backgroundAnimation('top-2/3')">
+					<div class="rotate-[-14deg]">
+						<img class="w-18 h-18 animate-bg-liftoff" src="https://openmoji.org/data/color/svg/1F6EC.svg">
+					</div>
+				</div>
+				<div data-bganimation="tardis" x-bind="backgroundAnimation('top-1/2')">
+					<div class="animate-bg-oscillate">
+						<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/E149.svg">
+					</div>
+				</div>
+				<div data-bganimation="shootingstar" x-bind="backgroundAnimation('left-2/3')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F320.svg">
+				</div>
+				<div data-bganimation="planet" x-bind="backgroundAnimation('top-1/2')">
+					<img class="w-18 h-18 animate-bg-updownup" src="https://openmoji.org/data/color/svg/1FA90.svg">
+				</div>
+				<div data-bganimation="comet" x-bind="backgroundAnimation('left-1/3')">
+					<div class="-scale-x-100">
+						<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/2604.svg">
+					</div>
+				</div>
+				<div data-bganimation="kite" x-bind="backgroundAnimation('top-3/4 grid grid-rows-2 grid-cols-2')">
+					<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-float" src="https://openmoji.org/data/color/svg/1FA81.svg">
+					<img class="w-18 h-18 row-start-2 col-start-2 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1F57A.svg">
+				</div>
+				<div data-bganimation="surfing" x-bind="backgroundAnimation('top-3/4 flex')">
+					<img class="w-18 h-18 animate-bg-wobble" src="https://openmoji.org/data/color/svg/1F30A.svg">
+					<img class="w-18 h-18 animate-bg-surfer" src="https://openmoji.org/data/color/svg/1F3C4.svg">
+				</div>
+				<div data-bganimation="satellite" x-bind="backgroundAnimation('top-1/2')">
+					<img class="w-18 h-18 animate-bg-updown" src="https://openmoji.org/data/color/svg/1F6F0.svg">
+				</div>
+				<div data-bganimation="broom" x-bind="backgroundAnimation('top-3/4 flex')">
+					<img class="w-18 h-18 animate-bg-sweep" src="https://openmoji.org/data/color/svg/1F9F9.svg">
+					<img class="w-18 h-18 rotate-[270deg]" src="https://openmoji.org/data/color/svg/1F5D1.svg">
+				</div>
+				<div data-bganimation="fly" x-bind="backgroundAnimation('top-1/2')">
+					<div class="animate-bg-buzz">
+						<img class="w-18 h-18 animate-bg-wiggle" src="https://openmoji.org/data/color/svg/1FAB0.svg">
+					</div>
+				</div>
+				<div data-bganimation="speedboat" x-bind="backgroundAnimation('top-3/4')">
+					<img class="w-18 h-18 animate-bg-porpoise" src="https://openmoji.org/data/color/svg/1F6A4.svg">
+				</div>
+				<div data-bganimation="breach" x-bind="backgroundAnimation('left-1/2 flex')">
+					<img class="w-18 h-18 animate-bg-breachsplashl" src="https://openmoji.org/data/color/svg/1F4A6.svg">
+					<div class="-scale-x-100 rotate-[280deg]">
+						<img class="w-18 h-18 animate-bg-whale" src="https://openmoji.org/data/color/svg/1F40B.svg">
+					</div>
+					<img class="w-18 h-18 animate-bg-breachsplashr" src="https://openmoji.org/data/color/svg/1F4A6.svg">
+				</div>
+				<div data-bganimation="ring" x-bind="backgroundAnimation('left-1/4 flex flex-col h-screen justify-between')">
+					<div class="animate-bg-fall">
+						<div class="animate-bg-destroy">
+							<img class="w-18 h-18 animate-bg-spinslow" src="https://openmoji.org/data/color/svg/1F48D.svg">
 						</div>
 					</div>
-					<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-appear" src="https://openmoji.org/data/color/svg/1F4A5.svg">
-					<div class="row-start-1 col-start-1 animate-bg-appear">
-						<div class="animate-bg-scattertr">
-							<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F525.svg">
+					<div class="grid grid-rows-1 grid-cols-1">
+						<div class="animate-bg-emerge row-start-1 col-start-1">
+							<div class="animate-bg-rumble">
+								<img class="w-18 h-18 animate-bg-destroy" src="https://openmoji.org/data/color/svg/1F30B.svg">
+							</div>
+						</div>
+						<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-appear" src="https://openmoji.org/data/color/svg/1F4A5.svg">
+						<div class="row-start-1 col-start-1 animate-bg-appear">
+							<div class="animate-bg-scattertr">
+								<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F525.svg">
+							</div>
+						</div>
+						<div class="row-start-1 col-start-1 animate-bg-appear">
+							<div class="animate-bg-scattertl">
+								<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F525.svg">
+							</div>
+						</div>
+						<div class="row-start-1 col-start-1 animate-bg-appear">
+							<div class="animate-bg-scattert">
+								<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1FAA8.svg">
+							</div>
+						</div>
+						<div class="row-start-1 col-start-1 animate-bg-appear">
+							<div class="animate-bg-scatterr">
+								<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1FAA8.svg">
+							</div>
+						</div>
+						<div class="row-start-1 col-start-1 animate-bg-appear">
+							<div class="animate-bg-scatterl">
+								<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1FAA8.svg">
+							</div>
 						</div>
 					</div>
-					<div class="row-start-1 col-start-1 animate-bg-appear">
-						<div class="animate-bg-scattertl">
-							<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F525.svg">
+				</div>
+				<div data-bganimation="sailboat" x-bind="backgroundAnimation('top-3/4')">
+					<div class="animate-bg-bob">
+						<img class="w-18 h-18 animate-bg-sway" src="https://openmoji.org/data/color/svg/26F5.svg">
+					</div>
+				</div>
+				<div data-bganimation="crab" x-bind="backgroundAnimation('top-2/3')">
+					<img class="w-18 h-18 animate-bg-crabwiggle" src="https://openmoji.org/data/color/svg/1F980.svg">
+				</div>
+				<div data-bganimation="fruits" x-bind="backgroundAnimation('flex justify-center w-full gap-32')">
+					<div class="animate-bg-throw1 opacity-0">
+						<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F96D.svg">
+					</div>
+					<div class="animate-bg-throw3 opacity-0">
+						<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F34A.svg">
+					</div>
+					<div class="animate-bg-throw2 opacity-0">
+						<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F345.svg">
+					</div>
+					<div class="animate-bg-throw4 opacity-0">
+						<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F4A3.svg">
+					</div>
+					<div class="animate-bg-throw3 opacity-0">
+						<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F34D.svg">
+					</div>
+				</div>
+				<div data-bganimation="cricket" x-bind="backgroundAnimation('top-3/4')">
+					<img class="w-18 h-18 animate-bg-jump" src="https://openmoji.org/data/color/svg/1F997.svg">
+				</div>
+				<div data-bganimation="snail" x-bind="backgroundAnimation('top-1/4')">
+					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F40C.svg">
+				</div>
+				<div data-bganimation="shark" x-bind="backgroundAnimation('')">
+					<img class="w-18 h-18 animate-bg-submerge" src="https://openmoji.org/data/color/svg/1F988.svg">
+				</div>
+				<div data-bganimation="hatch" x-bind="backgroundAnimation('top-2/3 flex')">
+					<div class="animate-bg-chicken">
+						<img class="w-18 h-18 animate-bg-chickenwiggle" src="https://openmoji.org/data/color/svg/1F413.svg">
+					</div>
+					<div class="grid grid-rows-1 grid-cols-1 animate-bg-egg">
+						<img class="w-18 h-18 animate-bg-raw row-start-1 col-start-1" src="https://openmoji.org/data/color/svg/1F95A.svg">
+						<img class="w-18 h-18 animate-bg-hatching row-start-1 col-start-1" src="https://openmoji.org/data/color/svg/1F423.svg">
+						<div class="animate-bg-chick row-start-1 col-start-1">
+							<img class="w-18 h-18 animate-bg-chickwiggle" src="https://openmoji.org/data/color/svg/1F425.svg">
 						</div>
 					</div>
-					<div class="row-start-1 col-start-1 animate-bg-appear">
-						<div class="animate-bg-scattert">
-							<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1FAA8.svg">
-						</div>
+				</div>
+				<div data-bganimation="dolphin" x-bind="backgroundAnimation('left-2/3 grid grid-rows-1 grid-cols-1')">
+					<div class="row-start-1 col-start-1 flex animate-bg-dolphinsplash">
+						<img class="w-18 h-18 animate-bg-dolphinsplashl" src="https://openmoji.org/data/color/svg/1F4A6.svg">
+						<img class="w-18 h-18 animate-bg-dolphinsplashr" src="https://openmoji.org/data/color/svg/1F4A6.svg">
 					</div>
-					<div class="row-start-1 col-start-1 animate-bg-appear">
-						<div class="animate-bg-scatterr">
-							<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1FAA8.svg">
-						</div>
-					</div>
-					<div class="row-start-1 col-start-1 animate-bg-appear">
-						<div class="animate-bg-scatterl">
-							<img class="w-18 h-18 row-start-1 col-start-1 animate-bg-spin" src="https://openmoji.org/data/color/svg/1FAA8.svg">
-						</div>
+					<div class="animate-bg-dolphinvertical row-start-1 col-start-1">
+						<img class="w-18 h-18 animate-bg-flip" src="https://openmoji.org/data/color/svg/1F42C.svg">
 					</div>
 				</div>
 			</div>
-			<div data-bganimation="sailboat" x-bind="backgroundAnimation('top-3/4')">
-				<div class="animate-bg-bob">
-					<img class="w-18 h-18 animate-bg-sway" src="https://openmoji.org/data/color/svg/26F5.svg">
-				</div>
-			</div>
-			<div data-bganimation="crab" x-bind="backgroundAnimation('top-2/3')">
-				<img class="w-18 h-18 animate-bg-crabwiggle" src="https://openmoji.org/data/color/svg/1F980.svg">
-			</div>
-			<div data-bganimation="fruits" x-bind="backgroundAnimation('flex justify-center w-full gap-32')">
-				<div class="animate-bg-throw1 opacity-0">
-					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F96D.svg">
-				</div>
-				<div class="animate-bg-throw3 opacity-0">
-					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F34A.svg">
-				</div>
-				<div class="animate-bg-throw2 opacity-0">
-					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F345.svg">
-				</div>
-				<div class="animate-bg-throw4 opacity-0">
-					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F4A3.svg">
-				</div>
-				<div class="animate-bg-throw3 opacity-0">
-					<img class="w-18 h-18 animate-bg-spin" src="https://openmoji.org/data/color/svg/1F34D.svg">
-				</div>
-			</div>
-			<div data-bganimation="cricket" x-bind="backgroundAnimation('top-3/4')">
-				<img class="w-18 h-18 animate-bg-jump" src="https://openmoji.org/data/color/svg/1F997.svg">
-			</div>
-			<div data-bganimation="snail" x-bind="backgroundAnimation('top-1/4')">
-				<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F40C.svg">
-			</div>
-			<div data-bganimation="shark" x-bind="backgroundAnimation('')">
-				<img class="w-18 h-18 animate-bg-submerge" src="https://openmoji.org/data/color/svg/1F988.svg">
-			</div>
-			<div data-bganimation="hatch" x-bind="backgroundAnimation('top-2/3 flex')">
-				<div class="animate-bg-chicken">
-					<img class="w-18 h-18 animate-bg-chickenwiggle" src="https://openmoji.org/data/color/svg/1F413.svg">
-				</div>
-				<div class="grid grid-rows-1 grid-cols-1 animate-bg-egg">
-					<img class="w-18 h-18 animate-bg-raw row-start-1 col-start-1" src="https://openmoji.org/data/color/svg/1F95A.svg">
-					<img class="w-18 h-18 animate-bg-hatching row-start-1 col-start-1" src="https://openmoji.org/data/color/svg/1F423.svg">
-					<div class="animate-bg-chick row-start-1 col-start-1">
-						<img class="w-18 h-18 animate-bg-chickwiggle" src="https://openmoji.org/data/color/svg/1F425.svg">
-					</div>
-				</div>
-			</div>
-			<div data-bganimation="dolphin" x-bind="backgroundAnimation('left-2/3 grid grid-rows-1 grid-cols-1')">
-				<div class="row-start-1 col-start-1 flex animate-bg-dolphinsplash">
-					<img class="w-18 h-18 animate-bg-dolphinsplashl" src="https://openmoji.org/data/color/svg/1F4A6.svg">
-					<img class="w-18 h-18 animate-bg-dolphinsplashr" src="https://openmoji.org/data/color/svg/1F4A6.svg">
-				</div>
-				<div class="animate-bg-dolphinvertical row-start-1 col-start-1">
-					<img class="w-18 h-18 animate-bg-flip" src="https://openmoji.org/data/color/svg/1F42C.svg">
-				</div>
-			</div>
-		</div>
+		</template>
+		
 	</div>
 </body>

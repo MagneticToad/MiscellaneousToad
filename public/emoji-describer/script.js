@@ -58,6 +58,9 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.store('util', {
         stringToColour(string) {
+            if (!string) {
+                return;
+            }
             let hash = string.split("").reduce((accumulator, currentValue) => accumulator + currentValue.charCodeAt(), 0);
             return config.lobbyPlayerColours[hash%config.lobbyPlayerColours.length];
         },
@@ -577,9 +580,13 @@ document.addEventListener('alpine:init', () => {
         animations: [],
         currentAnimation: "",
         playedAnimations: [],
+        paused: false,
         init() {
+            if (!config.animationsEnabled) {
+                return;
+            }
             this.animations = [...document.querySelectorAll("[data-bganimation]")].map(x => x.dataset.bganimation);
-            if (config.animationsEnabled) {
+            if (!this.paused) {
                 setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower) * 1000);
             }
         },
@@ -595,7 +602,9 @@ document.addEventListener('alpine:init', () => {
             this.$nextTick(() => {
                 let currentDuration = Number(getComputedStyle(document.querySelector(`[data-bganimation="${this.currentAnimation}"]`)).animationDuration.replace(/s$/, ''));
                 console.log(`Started ${this.currentAnimation} which has a duration of ${currentDuration}`);//###Debug
-                setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower + currentDuration) * 1000);
+                if (!this.paused) {
+                    setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower + currentDuration) * 1000);
+                }
             });
         }
     }));

@@ -194,6 +194,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
         addMessage(message) {
+            this.messages.push([{text: message.sender, styles: `${this.$store.util.stringToColour(message.sender)} font-medium`}, {text: message.isSender ? ' (You)' : '', styles: `${this.$store.util.stringToColour(message.sender)} font-medium`}, {text: `: ${message.message}`}]);
             this.messages.push(message);
             this.scrollIfScrolled(this.$el);
         }
@@ -312,54 +313,66 @@ document.addEventListener('alpine:init', () => {
         maxRounds: 0,
         timeTurnEnding: 0,
         gameOver: false,
-        init() {
-            this.clearState();
-        },
-        ownKeys() { //there should be an inbuilt way to do this, but this is all I could get to work
-            let keys = [];
-            for (let thing of Object.getOwnPropertyNames(this)) {
-                if (/^[^\$]/.test(thing)) { //if it doesn't start with a $ (prune out $event)
-                    if (["object", "boolean", "number", "string"].includes(typeof this[thing])) {
-                        keys.push(thing);
-                    }
-                }
-            }
-            return keys;
-        },
-        clearState() {
-            for (let key of this.ownKeys()) {
-                this[key] = null;
-            }
-        },
-        updateState(detail) {
-            Object.keys(detail).forEach((key) => {
-                this[key] = detail[key];
-            })
-        }
     }));
 
     Alpine.bind('gameEvents', () => ({
         ['@begingame.window']() {
-            this.clearState();
-            this.updateState(this.$event.detail);
+            //These are always defined
+            this.waitingForSelection = this.$event.detail.waitingForSelection;
+            this.youAreDescriber = this.$event.detail.youAreDescriber;
+            this.you = this.$event.detail.you;
+            this.describer = this.$event.detail.describer;
+            this.otherPlayers = this.$event.detail.otherPlayers;
+            this.round = this.$event.detail.round;
+            this.maxRounds = this.$event.detail.maxRounds;
+            this.newRound = this.$event.detail.newRound;
+            //These might not be
+            this.timeTurnEnding = this.$event.detail.timeTurnEnding;
+            this.promptOptions = this.$event.detail.promptOptions;
+            this.category = this.$event.detail.category;
+            this.prompt = this.$event.detail.prompt;
+            this.promptMask = this.$event.detail.promptMask;
             this.$dispatch('navigateto', 'game');
         },
         ['@continuegame.window']() {
-            this.updateState(this.$event.detail);
+            //These are always defined
+            this.waitingForSelection = this.$event.detail.waitingForSelection;
+            this.youAreDescriber = this.$event.detail.youAreDescriber;
+            this.you = this.$event.detail.you;
+            this.describer = this.$event.detail.describer;
+            this.otherPlayers = this.$event.detail.otherPlayers;
+            this.round = this.$event.detail.round;
+            this.maxRounds = this.$event.detail.maxRounds;
+            this.newRound = this.$event.detail.newRound;
+            //These might not be
+            this.timeTurnEnding = this.$event.detail.timeTurnEnding;
+            this.promptOptions = this.$event.detail.promptOptions;
+            this.category = this.$event.detail.category;
+            this.prompt = this.$event.detail.prompt;
+            this.promptMask = this.$event.detail.promptMask;
         },
         ['@playerjoinedgame.window']() {
-            this.updateState(this.$event.detail);
+            this.youAreDescriber = this.$event.detail.youAreDescriber;
+            this.otherPlayers = this.$event.detail.otherPlayers;
+            this.describer = this.$event.detail.describer;
+            this.you = this.$event.detail.you;
         },
         ['@playerleftgame.window']() {
-            this.describer = undefined; //default to this; updateState() will replace it if one was given
-            this.updateState(this.$event.detail);
+            this.youAreDescriber = this.$event.detail.youAreDescriber;
+            this.otherPlayers = this.$event.detail.otherPlayers;
+            this.describer = this.$event.detail.describer;
+            this.you = this.$event.detail.you;
         },
         ['@promptselected.window']() {
             this.waitingForSelection = false;
-            this.updateState(this.$event.detail);
+            this.youAreDescriber = this.$event.detail.youAreDescriber;
+            this.category = this.$event.detail.category;
+            this.prompt = this.$event.detail.prompt;
+            this.promptMask = this.$event.detail.promptMask;
         },
         ['@gameended.window']() {
-            this.updateState(this.$event.detail);
+            this.otherPlayers = this.$event.detail.otherPlayers;
+            this.you = this.$event.detail.you;
             this.describer = undefined; //not explicitly given by the event but implied; there is no describer once the game has ended
             this.youAreDescriber = false; //see above
             this.waitingForSelection = false;
@@ -497,13 +510,13 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('guesses', () => ({
         messages: [],
         showGuess(detail) {
-            this.showMessage(`${detail.guesser}${detail.isGuesser ? ' (You)' : ''}: ${detail.guess}`, false);
+            this.showMessage([{text: detail.guesser, styles: `${this.$store.util.stringToColour(detail.guesser)} font-medium`}, {text: detail.isGuesser ? ' (You)' : '', styles: `${this.$store.util.stringToColour(detail.guesser)} font-medium`}, {text: `: ${detail.guess}`}]);
         },
         showCorrectGuess(detail) {
-            this.showMessage(`${detail.guesser} has guessed correctly! The prompt was '${detail.prompt}'`, true);
+            this.showMessage([{text: detail.guesser, styles: `${this.$store.util.stringToColour(detail.guesser)} font-medium`}, {text: ' has guessed correctly! The prompt was '}, {text: detail.prompt, styles: 'font-medium'}]);
         },
         showTimeout(detail) {
-            this.showMessage(detail.prompt ? `Times up! The prompt was '${detail.prompt}'` : "Times up!", true);
+            this.showMessage(detail.prompt ? [{text: 'Times up! The prompt was '}, {text: detail.prompt, styles: 'font-medium'}] : [{text: 'Times up!'}]);
         },
         showBegin(detail) {
             this.messages = [];
@@ -511,26 +524,35 @@ document.addEventListener('alpine:init', () => {
         },
         showProgress(detail) {
             if (detail.newRound) {
-                this.showMessage(`Round ${detail.round}`, true);
+                this.showMessage([{text: `Round ${detail.round}`, styles: 'font-medium'}], true);
             }
-            this.showMessage(`${detail.describer.username}'s turn to describe`, true);
+            this.showMessage([{text: `${detail.describer.username}`, styles: `${this.$store.util.stringToColour(detail.describer.username)} font-medium`}, {text: '\'s turn to describe'}], true);
             if (detail.waitingForSelection) {
-                this.showMessage(`${detail.describer.username} is choosing a prompt`, true);
+                this.showMessage([{text: detail.describer.username, styles: `${this.$store.util.stringToColour(detail.describer.username)} font-medium`}, {text: ' is choosing a prompt'}], true);
             } else {
-                this.showMessage(`The category is: ${detail.category}`);
+                this.showMessage([{text: 'The category is '}, {text: detail.category, styles: 'font-medium'}]);
             }
         },
         showSelected(detail) {
-            this.showMessage(`${detail.describerName} has chosen a ${detail.category}`, true);
+            this.showMessage([{text: detail.describerName, styles: `${this.$store.util.stringToColour(detail.describerName)} font-medium`}, {text: ' has chosen a '}, {text: detail.category, styles: 'font-medium'}], true);
         },
         showEnded(detail) {
-            this.showMessage("The game has finished", true);
-            this.showMessage(`The ${detail.winners.length > 1 ? "winners are" : "winner is"} ${detail.winners.toString().replace(/,(?!.*,.*)/, " and ").replace(",", ", ")}`, true); //["Player"] => "The winner is Player", ["Player", "Gamer"] => "The winners are Player and Gamer", ["Player", "Gamer", "Participant"] => "The winners are Player, Gamer and Participant"
-	        this.showMessage(`Returning to the lobby in ${config.postGameLingerTime} seconds`);
+            this.showMessage([{text: 'Game over!', styles: 'font-medium'}], true);
+            let message = [{text: detail.winners.length > 1 ? 'The winners are ' : 'The winner is '}];
+            for (let i = 0; i < detail.winners.length; i++) {
+                message.push({text: detail.winners[i], styles: `${this.$store.util.stringToColour(detail.winners[i])} font-medium`});
+                if (i == detail.winners.length - 2) { //second to last
+                    message.push({text: ' and '});
+                } else if (i < detail.winners.length - 2) {//before that
+                    message.push({text: ', '});
+                }
+            }
+            this.showMessage(message, true);
+            this.showMessage([{text: `Returning to the lobby in ${config.postGameLingerTime} seconds`}]);
         },
         showPlayerLeft(detail) {
             if (detail.prompt) {
-                this.showMessage(`The describer left the game! The prompt was '${detail.prompt}'`);
+                this.showMessage([{text: 'The describer left the game! The prompt was '}, {text: detail.prompt, styles: 'font-medium'}]);
             }
         },
         showMessage(message, shouldScroll) {
@@ -586,14 +608,14 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
             this.animations = [...document.querySelectorAll("[data-bganimation]")].map(x => x.dataset.bganimation);
-            if (!this.paused) {
-                setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower) * 1000);
-            }
+            setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower) * 1000);
         },
         changeAnimation() {
+            if (this.paused) {
+                return;
+            }
             let newAnimations = this.animations.filter(x => !this.playedAnimations.includes(x)); //ones yet to be played in the current cycle
             if (newAnimations.length === 0) {
-                console.log("All have been played; looping again"); //###DEBUG
                 newAnimations = this.animations.filter(x => x != this.currentAnimation); //all animations except the current one (stop the same animation going twice in a row)
                 this.playedAnimations = []; //start a new cycle
             }
@@ -601,11 +623,15 @@ document.addEventListener('alpine:init', () => {
             this.playedAnimations.push(this.currentAnimation);
             this.$nextTick(() => {
                 let currentDuration = Number(getComputedStyle(document.querySelector(`[data-bganimation="${this.currentAnimation}"]`)).animationDuration.replace(/s$/, ''));
-                console.log(`Started ${this.currentAnimation} which has a duration of ${currentDuration}`);//###Debug
-                if (!this.paused) {
-                    setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower + currentDuration) * 1000);
-                }
+                setTimeout(() => this.changeAnimation(), (Math.random() * (config.bgAnimationGap.upper - config.bgAnimationGap.lower) + config.bgAnimationGap.lower + currentDuration) * 1000);
             });
+        },
+        pause() {
+            this.paused = true;
+        },
+        resume() {
+            this.paused = false;
+            this.changeAnimation();
         }
     }));
 

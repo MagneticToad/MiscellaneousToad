@@ -10,7 +10,7 @@
 	<link rel="stylesheet" href="output.css">
 </head>
 <body class="overflow-hidden">
-	<div class="h-screen max-h-screen flex flex-col bg-yellow-50 overflow-hidden z-0">
+	<div class="h-screen max-h-screen flex flex-col ls:bg-yellow-50 pt:bg-red-200 overflow-hidden z-0">
 		<template x-if="config.devMode" x-data="$store.pages">
 			<div class="border-2 border-solid border-black border-b p-2">
 				<div class="flex justify-between">
@@ -32,13 +32,13 @@
 							<span x-text="code"></span>
 						</div>
 						<div class="flex gap-1">
-							<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/1F464.svg">								
+							<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.name}.svg`">								
 							<input class="border-2 border-yellow-400" type="text" autocomplete="off" placeholder="Enter a name..." @keyup.enter="login()" @input="sanitiseUsername()" x-model="username"></input>
 						</div>
 						<div class="grid grid-rows-1 grid-cols-1">
 							<button class="row-start-1 col-start-1 z-40 bg-stone-300 hover:enabled:bg-stone-400 border border-black rounded-lg p-0.5 px-3 disabled:opacity-50 peer transition-colors" type="button" :disabled="!validUsername() || loggingIn" @click="login()" x-text="code ? (loggingIn ? 'Joining...' : 'Join') : (loggingIn ? 'Connecting...' : 'Play')"></button>							
 							<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-								<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/25B6.svg">								
+								<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.play}.svg`">								
 							</div>
 						</div>
 					</div>
@@ -49,19 +49,19 @@
 					<div class="grid grid-rows-1 grid-cols-1">
 						<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" type="button" @click="create()" :disabled="creating" x-data="createLobby" x-bind="creatingEvents" x-text="creating ? 'Creating...' : 'Create new game'"></button>
 						<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-							<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/2795.svg">								
+							<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.create}.svg`">								
 						</div>
 					</div>
 				</div>
 				<div class="col-start-1 col-span-2 row-start-2 row-end-2 flex flex-col gap-2 items-center justify-center border-r-2 border-t-2 border-yellow-300" x-data="joinLobby" x-bind="joiningEvents">
 					<div class="flex gap-1">
-						<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/1F520.svg">								
+						<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.code}.svg`">								
 						<input class="border-2 border-yellow-400" type="text" placeholder="Enter code here..." @input="sanitiseCode()" @keyup.enter="join()" x-model="code"></input>
 					</div>
 					<div class="grid grid-rows-1 grid-cols-1">
 						<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" :class="{'text-orange-500': joining}" @click="join()" type="button" :disabled="!validCode() || joining" x-text="joining ? 'Joining...' : 'Join game'"></button>
 						<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-							<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/1F3AB.svg">								
+							<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.join}.svg`">								
 						</div>
 					</div>
 				</div>
@@ -69,28 +69,25 @@
 					<p class="font-medium text-lg">Global Chat</p>
 					<div class="relative grid grid-rows-1 w-full h-full grid-cols-1 overflow-hidden">
 						<div class="row-start-1 col-start-1 flex flex-col grow bg-sky-50 w-full h-full overflow-y-auto break-words border-4 border-yellow-300" @globalchatmessage.window="addMessage($event.detail)" x-data="chatWindow">
-							<template x-for="m in messages">
-								<div class="flex whitespace-pre">
-									<div class="flex whitespace-pre font-medium" :class="$store.util.stringToColour(m.sender)">
-										<span class="font-medium" x-text="m.sender"></span>
-										<span class="font-medium" x-show="m.isSender"> (You)</span>
-									</div>
-									<span>: </span>
-									<span x-text="m.message"></span>
+							<template x-for="message in messages">
+								<div class="break-all">
+									<template x-for="part in message">
+										<span class="whitespace-pre-wrap" :class="part.styles" x-text="part.text"></span>
+									</template>
 								</div>
 							</template>
 						</div>
-						<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" src="https://openmoji.org/data/color/svg/1F310.svg">								
+						<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" :src="`https://openmoji.org/data/color/svg/${config.codes.global}.svg`">								
 					</div>					
 					<div class="flex gap-2" x-data="chatSend('globalChatMessage')">
 						<div class="flex gap-1">
-							<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/E267.svg">								
+							<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.globalMessage}.svg`">								
 							<input class="border-2 border-yellow-400" type="text" placeholder="Type here..." x-model="message" @keyup.enter="send()"></input>
 						</div>
 						<div class="grid grid-rows-1 grid-cols-1">
 							<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" type="button" @click="send()" :disabled="!validMessage()">Send</button>
 							<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-								<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/1F4E8.svg">								
+								<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.sendGlobalMessage}.svg`">								
 							</div>
 						</div>
 					</div>
@@ -105,7 +102,7 @@
 					<div class="grid grid-rows-1 grid-cols-1">
 						<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" type="button" @click="copyLink()" :disabled="copied" x-text="copied ? 'Copied!' : 'Copy invite link'"></button>
 						<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-							<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/E268.svg">								
+							<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.invite}.svg`">								
 						</div>
 					</div>
 				</div>
@@ -120,33 +117,33 @@
 								<div class="font-medium" :class="$store.util.stringToColour(other)" x-text="other"></div>
 							</template>
 						</div>
-						<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" src="https://openmoji.org/data/color/svg/1F465.svg">								
+						<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" :src="`https://openmoji.org/data/color/svg/${config.codes.players}.svg`">								
 					</div>
 					<div class="col-start-1 col-span-2 row-start-2 row-span-1 relative grid grid-rows-1 grid-cols-1 border-r-2 border-t-2 border-yellow-300"  x-data="settings" x-bind="settingsEvents">
 						<div class="row-start-1 col-start-1 flex flex-col items-start m-4 border-4 border-yellow-300 bg-gray-200">
 							<div class="self-stretch grid grid-rows-1 grid-cols-2 justify-items-start">
 								<div class="grid grid-rows-1 grid-cols-1 cursor-default" title="The only mode, currently">
 									<div class="row-start-1 col-start-1 peer z-40 flex items-center">
-										<img class="w-5.5 h-5.5" src="https://openmoji.org/data/color/svg/1F518.svg">
+										<img class="w-5.5 h-5.5" :src="`https://openmoji.org/data/color/svg/${config.codes.radioSelected}.svg`">
 										<span>Free-for-all</span>
 									</div>
 									<div class="row-start-1 col-start-1 z-30 invisible peer-hover:visible translate-x-3/4 peer-hover:translate-x-full transition-transform">
-										<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/2694.svg">
+										<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.freeForAll}.svg`">
 									</div>
 								</div>
 								<div class="grid grid-rows-1 grid-cols-1 cursor-default" title="Teams mode - coming soon?">
 									<div class="row-start-1 col-start-1 peer z-40 flex items-center">
-										<img class="w-4 h-4 opacity-50 cursor-not-allowed" src="https://openmoji.org/data/color/svg/26AB.svg">
+										<img class="w-4 h-4 opacity-50 cursor-not-allowed" :src="`https://openmoji.org/data/color/svg/${config.codes.radioUnselected}.svg`">
 										<span class="text-gray-400">Teams</span>
 									</div>
 									<div class="row-start-1 col-start-1 z-30 invisible peer-hover:visible translate-x-3/4 peer-hover:translate-x-full transition-transform">
-										<img class="w-8 h-8 grayscale opacity-50" src="https://openmoji.org/data/color/svg/1F91D.svg">
+										<img class="w-8 h-8 grayscale opacity-50" :src="`https://openmoji.org/data/color/svg/${config.codes.teams}.svg`">
 									</div>
 								</div>
 							</div>
 							<div class="grid grid-rows-1 grid-cols-1" title="The describer only has a limited amount of time to describe the prompt">
 								<div class="row-start-1 col-start-1 peer z-40 flex items-center">
-									<img class="w-8 h-8 cursor-pointer" :src="timer ? 'https://openmoji.org/data/color/svg/E245.svg' : 'https://openmoji.org/data/color/svg/E241.svg'" @click="changeSetting('timer', !timer)">
+									<img class="w-8 h-8 cursor-pointer" :src="timer ? `https://openmoji.org/data/color/svg/${config.codes.toggleSelected}.svg` : `https://openmoji.org/data/color/svg/${config.codes.toggleUnselected}.svg`" @click="changeSetting('timer', !timer)">
 									<span class=" cursor-default pr-1" :class="{'text-gray-400': !timer}">Timer</span>
 									<select @change="changeSetting('timerTime', timerTime)" x-model.number="timerTime" :disabled="!timer">
 										<template x-for="time in config.offeredTimerTimes">
@@ -155,25 +152,25 @@
 									</select>
 								</div>
 								<div class="row-start-1 col-start-1 z-30 invisible peer-hover:visible translate-x-3/4 peer-hover:translate-x-full transition-transform">
-									<img class="w-8 h-8" :class="{'grayscale opacity-50': !timer}" src="https://openmoji.org/data/color/svg/23F3.svg">
+									<img class="w-8 h-8" :class="{'grayscale opacity-50': !timer}" :src="`https://openmoji.org/data/color/svg/${config.codes.timer}.svg`">
 								</div>
 							</div>
 							<div class="grid grid-rows-1 grid-cols-1" title="The describer can choose a prompt from a set of options">
 								<div class="row-start-1 col-start-1 peer z-40 flex items-center">
-									<img class="w-8 h-8 cursor-pointer" :src="promptOptions ? 'https://openmoji.org/data/color/svg/E245.svg' : 'https://openmoji.org/data/color/svg/E241.svg'" @click="changeSetting('promptOptions', !promptOptions)">
+									<img class="w-8 h-8 cursor-pointer" :src="promptOptions ? `https://openmoji.org/data/color/svg/${config.codes.toggleSelected}.svg` : `https://openmoji.org/data/color/svg/${config.codes.toggleUnselected}.svg`" @click="changeSetting('promptOptions', !promptOptions)">
 									<span class="cursor-default" :class="{'text-gray-400': !promptOptions}">Prompt options</span>
 								</div>
 								<div class="row-start-1 col-start-1 z-30 invisible peer-hover:visible translate-x-3/4 peer-hover:translate-x-full transition-transform">
-									<img class="w-8 h-8" :class="{'grayscale opacity-50': !promptOptions}" src="https://openmoji.org/data/color/svg/1F914.svg">
+									<img class="w-8 h-8" :class="{'grayscale opacity-50': !promptOptions}" :src="`https://openmoji.org/data/color/svg/${config.codes.promptOptions}.svg`">
 								</div>
 							</div>
 							<div class="grid grid-rows-1 grid-cols-1" title="The guessers get the scaffold of the prompt e.g. '_ _ _   _ _ _ _ _   _ _ _ _ _ _'">
 								<div class="row-start-1 col-start-1 peer z-40 flex items-center">
-									<img class="w-8 h-8 cursor-pointer" :src="promptMasks ? 'https://openmoji.org/data/color/svg/E245.svg' : 'https://openmoji.org/data/color/svg/E241.svg'" @click="changeSetting('promptMasks', !promptMasks)">
+									<img class="w-8 h-8 cursor-pointer" :src="promptMasks ? `https://openmoji.org/data/color/svg/${config.codes.toggleSelected}.svg` : `https://openmoji.org/data/color/svg/${config.codes.toggleUnselected}.svg`" @click="changeSetting('promptMasks', !promptMasks)">
 									<span class="cursor-default" :class="{'text-gray-400': !promptMasks}">Prompt masks</span>
 								</div>
 								<div class="row-start-1 col-start-1 z-30 invisible peer-hover:visible translate-x-3/4 peer-hover:translate-x-full transition-transform">
-									<img class="w-8 h-8" :class="{'grayscale opacity-50': !promptMasks}" src="https://openmoji.org/data/color/svg/1F3AD.svg">
+									<img class="w-8 h-8" :class="{'grayscale opacity-50': !promptMasks}" :src="`https://openmoji.org/data/color/svg/${config.codes.promptMasks}.svg`">
 								</div>
 							</div>
 							<div class="grid grid-rows-1 grid-cols-1" title="The number of rounds the game will last for">
@@ -186,11 +183,11 @@
 									</select>
 								</div>
 								<div class="row-start-1 col-start-1 z-30 invisible peer-hover:visible translate-x-3/4 peer-hover:translate-x-full transition-transform">
-									<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/1F504.svg">
+									<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.rounds}.svg`">
 								</div>
 							</div>
 						</div>
-						<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" src="https://openmoji.org/data/color/svg/2699.svg">								
+						<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" :src="`https://openmoji.org/data/color/svg/${config.codes.settings}.svg`">								
 					</div>
 					<div class="col-start-3 col-span-3 row-start-1 row-span-2 flex flex-col justify-between p-4 border-l-2 border-yellow-300" x-data="{isLobby: true}">
 						<h1 class="self-center font-medium text-lg">Chat</h1>
@@ -202,28 +199,25 @@
 						<div class="flex flex-col gap-2 grow overflow-hidden" x-show="isLobby">
 							<div class="relative grid grid-rows-1 w-full h-full grid-cols-1 overflow-hidden">
 								<div class="row-start-1 col-start-1 flex flex-col grow bg-yellow-50 w-full h-full overflow-y-auto break-words border-x-4 border-b-4 border-yellow-300" @lobbychatmessage.window="addMessage($event.detail)" x-data="chatWindow">
-									<template x-for="m in messages">
-										<div class="flex whitespace-pre">
-											<div class="flex whitespace-pre font-medium" :class="$store.util.stringToColour(m.sender)">
-												<span class="font-medium" x-text="m.sender"></span>
-												<span class="font-medium" x-show="m.isSender"> (You)</span>
-											</div>
-											<span>: </span>
-											<span x-text="m.message"></span>
+									<template x-for="message in messages">
+										<div class="break-all">
+											<template x-for="part in message">
+												<span class="whitespace-pre-wrap" :class="part.styles" x-text="part.text"></span>
+											</template>
 										</div>
 									</template>
 								</div>
-								<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" src="https://openmoji.org/data/color/svg/E249.svg">								
+								<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" :src="`https://openmoji.org/data/color/svg/${config.codes.lobby}.svg`">								
 							</div>
 							<div class="self-center flex gap-2" x-data="chatSend('lobbyChatMessage')">
 								<div class="flex gap-1">
-									<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/E246.svg">								
+									<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.lobbyMessage}.svg`">								
 									<input class="border-2 border-yellow-400" type="text" placeholder="Type here..." x-model="message" @keyup.enter="send()"></input>
 								</div>
 								<div class="grid grid-rows-1 grid-cols-1">
 									<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" type="button" @click="send()" :disabled="!validMessage()">Send</button>
 									<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-										<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/E263.svg">								
+										<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.sendLobbyMessage}.svg`">								
 									</div>
 								</div>
 							</div>
@@ -231,28 +225,25 @@
 						<div class="flex flex-col gap-2 grow overflow-hidden" x-cloak x-show="!isLobby">
 							<div class="relative grid grid-rows-1 w-full h-full grid-cols-1 overflow-hidden">
 								<div class="row-start-1 col-start-1 flex flex-col grow bg-sky-50 w-full h-full overflow-y-auto break-words border-x-4 border-b-4 border-yellow-300" @globalchatmessage.window="addMessage($event.detail)" x-data="chatWindow">
-									<template x-for="m in messages">
-										<div class="flex whitespace-pre">
-											<div class="flex whitespace-pre font-medium" :class="$store.util.stringToColour(m.sender)">
-												<span class="font-medium" x-text="m.sender"></span>
-												<span class="font-medium" x-show="m.isSender"> (You)</span>
-											</div>
-											<span>: </span>
-											<span x-text="m.message"></span>
+									<template x-for="message in messages">
+										<div class="break-all">
+											<template x-for="part in message">
+												<span class="whitespace-pre-wrap" :class="part.styles" x-text="part.text"></span>
+											</template>
 										</div>
 									</template>
 								</div>
-								<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" src="https://openmoji.org/data/color/svg/1F310.svg">								
+								<img class="row-start-1 col-start-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none w-16 h-16" :src="`https://openmoji.org/data/color/svg/${config.codes.global}.svg`">								
 							</div>			
 							<div class="self-center flex gap-2" x-data="chatSend('globalChatMessage')">
 								<div class="flex gap-1">
-									<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/E267.svg">								
+									<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.globalMessage}.svg`">								
 									<input class="border-2 border-yellow-400" type="text" placeholder="Type here..." x-model="message" @keyup.enter="send()"></input>
 								</div>
 								<div class="grid grid-rows-1 grid-cols-1">
 									<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" type="button" @click="send()" :disabled="!validMessage()">Send</button>
 									<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-										<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/1F4E8.svg">								
+										<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.sendGlobalMessage}.svg`">								
 									</div>
 								</div>
 							</div>
@@ -263,13 +254,13 @@
 					<div class="grid grid-rows-1 grid-cols-1">
 						<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" type="button" x-data="startGame" @click="start()" x-bind="startGameEvents" :disabled="starting || others.length === 0" x-text="starting ? 'Starting...' : 'Start game'"></button>
 						<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-							<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/25B6.svg">								
+							<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.start}.svg`">								
 						</div>
 					</div>
 					<div class="grid grid-rows-1 grid-cols-1">
 						<button class="row-start-1 col-start-1 z-40 border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors bg-amber-300 hover:enabled:bg-amber-400 disabled:opacity-50 peer" type="button" x-data="leaveLobby" @click="leave()" x-bind="leaveLobbyEvents" :disabled="leaving" x-text="leaving ? 'Leaving...' : 'Leave'"></button>
 						<div class="row-start-1 col-start-1 z-30 invisible peer-hover:peer-enabled:visible peer-hover:peer-enabled:translate-x-full transition-transform">
-							<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/E201.svg">								
+							<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.leave}.svg`">								
 						</div>
 					</div>
 				</div>
@@ -277,32 +268,32 @@
 			<div data-page="game" class="grid grid-cols-6 h-5/6 w-3/4 border-4 border-yellow-300 rounded-3xl bg-yellow-200 overflow-hidden" x-cloak x-show="$store.pages.currentPage == $el.dataset.page" x-data="game" x-bind="gameEvents">
 				<div class="col-span-1 flex flex-col gap-2 border-r-2 border-yellow-300">
 					<span class="font-bold text-center border-b-4 bg-amber-200 border-yellow-300">Players</span>
-					<div class="font-medium grid auto-rows-auto grid-cols-two gap-2 justify-start break-all">
+					<div class="font-medium grid auto-rows-auto grid-cols-two gap-2 justify-start break-all"> <!-- trade off with auto-rows; auto means describer is higher than others, but fr means that a single username spanning two rows will grow all others -->
 						<div class="contents">
 							<div class="col-start-1 flex items-center">
-								<img class="w-4 h-4" src="https://openmoji.org/data/color/svg/2B50.svg">
+								<img class="w-4 h-4" :src="`https://openmoji.org/data/color/svg/${config.codes.points}.svg`">
 								<span x-text="you?.score"></span>
 							</div>
 							<div class="col-start-2 flex items-center" :class="$store.util.stringToColour(you?.username)">
 								<span x-text="you?.username"></span>
 								<span class="pl-1 shrink-0">(you)</span>
-								<img x-show="youAreDescriber" class="w-8 h-8" src="https://openmoji.org/data/color/svg/270F.svg">
+								<img x-show="youAreDescriber" class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.describer}.svg`">
 							</div>
 						</div>
 						<div class="contents" x-show="describer && !youAreDescriber">
 							<div class="col-start-1 flex items-center">
-								<img class="w-4 h-4" src="https://openmoji.org/data/color/svg/2B50.svg">
+								<img class="w-4 h-4" :src="`https://openmoji.org/data/color/svg/${config.codes.points}.svg`">
 								<span x-text="describer?.score"></span>
 							</div>
 							<div class="col-start-2 flex items-center" :class="$store.util.stringToColour(describer?.username)">
 								<span x-text="describer?.username"></span>
-								<img class="w-8 h-8" src="https://openmoji.org/data/color/svg/270F.svg">
+								<img class="w-8 h-8" :src="`https://openmoji.org/data/color/svg/${config.codes.describer}.svg`">
 							</div>
 						</div>
 						<template x-for="player in otherPlayers">
 							<div class="contents" x-show="typeof player == 'object'">
 								<div class="col-start-1 flex items-center">
-									<img class="w-4 h-4" src="https://openmoji.org/data/color/svg/2B50.svg">
+									<img class="w-4 h-4" :src="`https://openmoji.org/data/color/svg/${config.codes.points}.svg`">
 									<span x-text="player?.score"></span>
 								</div>
 								<div class="col-start-2 flex items-center" :class="$store.util.stringToColour(player?.username)">
@@ -314,14 +305,14 @@
 				</div>
 				<div class="col-span-3 flex flex-col justify-start gap-2 border-x-2 border-yellow-300 overflow-hidden" >
 					<div class="basis-auto flex justify-between border-b-4 border-yellow-300 shrink-0 bg-amber-200 font-bold">
-						<div class="flex whitespace-pre">
+						<div class="flex whitespace-pre ml-2 basis-1/4">
 							<span>Round </span>
 							<span></span>
 							<span x-text="round"></span>
 							<span> of </span>
 							<span x-text="maxRounds"></span>
 						</div>
-						<div class="flex justify-center">
+						<div class="flex justify-center basis-1/2">
 							<div class="flex whitespace-pre" x-show="waitingForSelection">
 								<span x-text="describer?.username"></span>
 								<span> is selecting a prompt</span>
@@ -347,15 +338,15 @@
 								</div>
 							</div>
 						</div>
-						<div class="bg-fuchsia-600">
+						<div class="mr-2 basis-1/4 flex justify-end">
 							<span class="text-red-500" x-data="timer" x-bind="timerEvents" x-text="timeRemaining" x-show="active"></span>
 						</div>
 					</div>
-					<div class="basis-auto flex flex-col items-center gap-2 bg-pink-300" x-show="youAreDescriber && waitingForSelection" x-data="selectPrompt" x-bind="selectingEvents">
+					<div class="basis-auto flex flex-col items-center gap-2" x-show="youAreDescriber && waitingForSelection" x-data="selectPrompt" x-bind="selectingEvents">
 						<span class="font-bold" :class="{'text-orange-500': selecting}" x-text="selecting ? 'Selecting...' : 'Choose a prompt'"></span>
 						<div class="flex justify-around gap-2 w-full">
 							<template x-for="(option, index) in promptOptions">
-								<div class="flex flex-col border items-center border-black p-2 hover:bg-slate-400" :class="{'cursor-pointer': !selecting, 'cursor-default opacity-50': selecting}" @click="select(index)">
+								<div class="flex flex-col border-2 items-center border-amber-500 rounded-lg bg-amber-300 py-0.5 px-2 transition-transform duration-100" :class="{'cursor-pointer hover:scale-110 hover:rotate-1': !selecting, 'cursor-default opacity-50': selecting}" @click="select(index)">
 									<span class="font-bold" x-text="option.category"></span>
 									<span x-text="option.prompt"></span>
 								</div>
@@ -370,36 +361,44 @@
 								</template>
 							</div>
 						</template>
+						<div x-show="clues.length == 0 && youAreDescriber && !waitingForSelection" class="flex flex-col font-bold text-center gap-1">
+							<span>Search for emojis using the search box at the bottom</span>
+							<span>Click on emojis to add them to your clue</span>
+							<span>Click the envelope to send your clue</span>
+							<span>You can send as many clues as you like</span>
+						</div>
 					</div>
-					<div class="basis-auto flex flex-col items-center justify-end w-full bg-blue-300 overflow-hidden" x-show="youAreDescriber && !waitingForSelection" x-data="buildClue" x-bind="buildClueEvents"> <!-- This could also be unplayable on small heights... Considering adding a query to change to remove auto and shrink-0 with basis-full, and use basis-full on the above div instead of grow -->
-						<div class="basis-19 items-end flex w-full justify-between overflow-hidden bg-red-200"> <!-- This will make clues unusable on very small heights (search results are not shown as this covers them); consider having breakpoints to remove the shrink-0 class -->
+					<div class="basis-auto flex flex-col items-center justify-end w-full bg-blue-300 border-yellow-300 border-t-4 overflow-hidden" x-show="youAreDescriber && !waitingForSelection" x-data="buildClue" x-bind="buildClueEvents"> <!-- This could also be unplayable on small heights... Considering adding a query to change to remove auto and shrink-0 with basis-full, and use basis-full on the above div instead of grow -->
+						<div class="basis-19 items-end flex w-full justify-between overflow-hidden bg-amber-100"> <!-- This will make clues unusable on very small heights (search results are not shown as this covers them); consider having breakpoints to remove the shrink-0 class -->
 							<div></div>
-							<div x-ref="cluePreview" class="flex flex-wrap items-end justify-start border-x border-t border-black bg-slate-300 max-h-full overflow-y-auto">
-								<div class="flex flex-col items-center bg-emerald-500" x-show="clue.length === 0">
-									<span>Click on emojis to add them to your clue</span>
-									<span>Click send when your clue is ready</span>
-								</div>
+							<div x-ref="cluePreview" class="flex flex-wrap items-end justify-start max-h-full overflow-y-auto">
 								<template x-for="code in clue">
 									<img class="w-18 h-18" :src="config.devMode ? `../emojis/images/${code}.png` : `https://openmoji.org/data/color/svg/${code}.svg`">	
 								</template>
 							</div>
-							<div class="shrink-0">
-								<button class="border border-black rounded-lg p-0.5" type="button" @click="clue.pop()">Undo</button>
-								<button class="border border-black rounded-lg p-0.5" type="button" @click="clue = []">Clear</button>
-								<button class="border border-black rounded-lg p-0.5" :class="{'text-orange-500': sending}" type="button" @click="sendClue()" :disabled="sending">Send</button>
+							<div class="shrink-0 flex">
+								<div class="border border-black rounded-lg -scale-x-100" @click="clue.pop()">
+									<img class="w-12 h-12 cursor-pointer hover:scale-110" :src="`https://openmoji.org/data/color/svg/${config.codes.undo}.svg`" title="Undo">
+								</div>
+								<div class="border border-black rounded-lg" @click="clue.length = 0">
+									<img class="w-12 h-12 cursor-pointer hover:scale-110" :src="`https://openmoji.org/data/color/svg/${config.codes.clear}.svg`" title="Clear">
+								</div>
+								<div class="border border-black rounded-lg" @click="sendClue()" title="Send">
+									<img class="w-12 h-12" :class="{'cursor-pointer hover:scale-110': !sending, 'cursor-default opacity-50 scale-110': sending}" :src="sending ? `https://openmoji.org/data/color/svg/${config.codes.clueSending}.svg` : `https://openmoji.org/data/color/svg/${config.codes.sendClue}.svg`">
+								</div>
 							</div>
 						</div>
-						<div class="border-t border-black w-full flex flex-wrap items-center justify-center max-h-37 overflow-y-auto bg-red-400">
+						<div class="border-t-4 border-yellow-300 w-full flex flex-wrap items-center justify-center max-h-37 overflow-y-auto bg-amber-200">
 							<span x-show="searchResults.length === 0">No results</span>
 							<template x-for="code in searchResults">
 								<img class="w-18 h-18 cursor-pointer hover:bg-purple-400" :src="config.devMode ? `../emojis/images/${code}.png` : `https://openmoji.org/data/color/svg/${code}.svg`" :alt="emojis[code].name", :title="emojis[code].name" @click="addToClue(code)">
 							</template>
 						</div>
-						<div class="flex gap-2 border-t justify-center border-black w-full bg-red-600">
-							<input type="text" placeholder="Search for emojis here..." @keyup.enter="search()" @input.debounce="if (fastSearch) search()" x-model="query">
-							<button type="button" @click="search()">Search</button>
-							<label title="Search results appear as you type - uses more data and requires a fast connection to work well">
-								<input type="checkbox" x-model="fastSearch">
+						<div class="flex gap-2 border-t-2 justify-center items-center border-yellow-300 w-full bg-amber-200 py-1">
+							<input class="border-2 border-amber-400 rounded-lg px-1" type="text" placeholder="Search for emojis here..." @keyup.enter="search()" @input.debounce="if (fastSearch) search()" x-model="query">
+							<button class="border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors duration-75 bg-amber-300 hover:bg-amber-400" type="button" @click="search()">Search</button>
+							<label class=" flex items-center gap-1 self-center" title="Search results appear as you type - uses more data and requires a fast connection to work well">
+								<input class="bg-orange-200" type="checkbox" x-model="fastSearch">
 								Fast search
 							</label>
 						</div>
@@ -407,14 +406,18 @@
 				</div>
 				<div class="col-span-2 flex flex-col justify-between border-l-2 border-yellow-300 overflow-hidden">
 					<span class="font-bold text-center border-b-4 border-yellow-300 bg-amber-200">Guess</span>
-					<div x-ref="guesses" class="flex flex-col grow justify-start overflow-y-auto" x-data="guesses" x-bind="guessesEvents">
+					<div x-ref="guesses" class="flex flex-col grow overflow-y-auto p-1" x-data="guesses" x-bind="guessesEvents">
 						<template x-for="message in messages">
-							<span x-text="message"></span>
+							<div class="break-all">
+								<template x-for="part in message">
+									<span class="whitespace-pre-wrap" :class="part.styles" x-text="part.text"></span>
+								</template>
+							</div>
 						</template>
 					</div>
-					<div class="flex justify-between gap-2 border-t border-black" x-data="guess" x-show="!youAreDescriber">
-						<input class="grow" type="text" placeholder="Guess here..." x-model="guess" @keyup.enter="makeGuess()">
-						<button type="button" @click=makeGuess()>Guess</button>
+					<div class="flex justify-between gap-2 border-t-4 p-1 pr-2 border-yellow-300" x-data="guess" x-show="!youAreDescriber">
+						<input class="grow border-2 border-amber-400 rounded-lg px-1" type="text" placeholder="Guess here..." x-model="guess" @keyup.enter="makeGuess()">
+						<button class="border-2 border-amber-500 rounded-lg py-0.5 px-2 transition-colors duration-75 bg-amber-300 hover:bg-amber-400" type="button" @click=makeGuess()>Guess</button>
 					</div>
 				</div>
 			</div>
@@ -423,7 +426,7 @@
 			<!-- Used to make the content slightly more on the top half of the screen, rather than in the center -->
 		</div>
 		<template x-if="config.animationsEnabled" x-data>
-			<div class="contents z-10" x-data="backgroundAnimations" x-show="config.animationsEnabled" @keyup.equal.window="paused=true">
+			<div class="contents z-10" x-data="backgroundAnimations" x-show="config.animationsEnabled" @begingame.window="pause()" @gameended.window="resume()">
 				<div data-bganimation="racecar" x-bind="backgroundAnimation('top-1/2')">
 					<img class="w-18 h-18" src="https://openmoji.org/data/color/svg/1F3CE.svg">
 				</div>

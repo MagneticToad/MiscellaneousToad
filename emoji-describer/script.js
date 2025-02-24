@@ -332,6 +332,7 @@ document.addEventListener('alpine:init', () => {
             this.category = this.$event.detail.category;
             this.prompt = this.$event.detail.prompt;
             this.promptMask = this.$event.detail.promptMask;
+	    this.gameOver = false;
             this.$dispatch('navigateto', 'game');
         },
         ['@continuegame.window']() {

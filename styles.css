@@ -37,20 +37,18 @@ a.box {
 	min-width: 15em;
 	text-align: center;
 	position: relative;
-	display: inline-block;
-	background: linear-gradient(to right, #a966ec, #a966ec 50%, #66a9ec 50%);
-	background-clip: text;
-	background-size: 200% 100%;
-	background-position: 100%;
-	transition: background-position 200ms ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 0.2em;
-}
 
+	background-image: linear-gradient(to right, #a966ec, #a966ec 50%, #66a9ec 50%);
+	background-size: 200% 100%;
+	background-position: right bottom;
+	transition: background-position 200ms ease;
+}
 a.box:hover {
-	background-position: 0 100%;
+	background-position: left bottom;
 }
 
 .spin-wiggle {
